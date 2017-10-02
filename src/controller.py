@@ -1,5 +1,7 @@
 from src.collections import CacheList
+from src.command_input import CommandInputManager
 from zs_globals import ControllerInputs as ConIn
+from math import sqrt
 
 
 #
@@ -20,7 +22,10 @@ class Controller:
 
         self.devices = []
         self.mappings = {}
-        self.commands = {}
+
+        self.command_manager = CommandInputManager(self)
+        self.add_command_input = self.command_manager.add_command_input
+        self.check_command = self.command_manager.check_command
 
     def __repr__(self):
         c = self.__class__.__name__
@@ -62,23 +67,6 @@ class Controller:
             for i in range(4):
                 self.add_device(buttons[i], mapping[i])
 
-    def get_command_frames(self, *device_names):
-        device_frames = [self.get_device_frames(n) for n in device_names]
-        frames = tuple(zip(*device_frames))
-
-        return frames
-
-    def check_command(self, name):
-        return self.commands[name].active
-
-    def add_command_input(self, name, d, step_dict):
-        steps = [Step.get_step_from_key(k, step_dict) for k in d["steps"]]
-        devices = d["devices"]
-        window = d.get("window", 1)
-
-        self.commands[name] = Command(
-            name, steps, devices, window)
-
     # update frame input data and call device update methods
     def update(self):
         self.update_frames()
@@ -86,9 +74,7 @@ class Controller:
         for d in self.devices:
             d.update()
 
-        for command in self.commands.values():
-            frames = self.get_command_frames(*command.devices)
-            command.update(frames[-1])
+        self.command_manager.update()
 
     # append frame data to frame cache object
     def update_frames(self):
@@ -181,7 +167,7 @@ class Button(InputDevice):
         return ignore
 
     def check(self):
-        if self.lifted:
+        if not self.lifted:
             return self.held and not self.ignore
 
     # negative_edge returns True if a button was pushed the last frame and has just
@@ -305,98 +291,56 @@ class Dpad(InputDevice):
             self.last_direction = x, y
 
 
-class Command:
-    def __init__(self, name, steps, device_names, frame_window=0):
-        self.name = name
-        self.steps = steps
-        if not frame_window:
-            frame_window = sum([step.frame_window for step in steps])
-        self.frame_window = frame_window
-        self.frames = CacheList(frame_window)
-        self.devices = device_names
-        self.active = False
+class ThumbStick(InputDevice):
+    def __init__(self, name, controller):
+        super(ThumbStick, self).__init__(name, controller)
+        self.default = 0, 0
+
+    @property
+    def x_axis(self):
+        return self.get_value()[0]
+
+    @property
+    def y_axis(self):
+        return self.get_value()[1]
+
+    def get_direction(self):
+        return self.get_value()
+
+    def get_magnitude(self):
+        x, y = self.x_axis, self.y_axis
+        x **= 2
+        y **= 2
+        m = round(sqrt(x + y), 3)
+
+        return m
+
+    def is_neutral(self):
+        return self.get_magnitude() < ConIn.STICK_DEAD_ZONE
 
     def check(self):
-        frames = self.frames
-        l = len(frames)
-        i = 0
-        for step in self.steps:
-            sub_slice = frames[i:l]
-            j = step.check(sub_slice)
-            step.last = j
-            i += j
-            if j == 0:
-                return False
-
-        return True
-
-    def update(self, frame):
-        self.frames.append(frame)
-        c = self.check()
-        self.active = c
-
-        if c:
-            self.frames.clear()
-
-    def __repr__(self):
-        return self.name
-
-
-class Step:
-    # condition: check_func
-    # check_func: function(frame) => Bool
-
-    def __init__(self, name, conditions, frame_window=1):
-        self.name = name
-        self.conditions = conditions
-        self.frame_window = frame_window
-        self.last = 0
-
-    def get_matrix(self, frames):
-        frame_matrix = []
-        conditions = self.conditions
-
-        for con in conditions:
-            check = con
-            row = [check(frame) for frame in frames]
-            frame_matrix.append(row)
-
-        return frame_matrix
-
-    def get_sub_matrix(self, frame_matrix, i):
-        conditions = self.conditions
-        fw = self.frame_window
-        sub_matrix = []
-
-        for con in conditions:
-            row_i = conditions.index(con)
-            row = frame_matrix[row_i][i:i + fw]
-            sub_matrix.append(row)
-
-        return sub_matrix
-
-    def check(self, frames):
-        frame_matrix = self.get_matrix(frames)
-        fw = self.frame_window
-        fl = len(frames)
-
-        for i in range((fl - fw) + 1):
-            sub_matrix = self.get_sub_matrix(frame_matrix, i)
-            truth = all([any(row) for row in sub_matrix])
-
-            if truth:
-                return i + 1
-        return 0
+        return not self.is_neutral()
 
     @staticmethod
-    def get_step_from_key(key, step_dict):
-        conditions, window = step_dict
+    def get_input(mappings):
+        x, y = [m.get_value() for m in mappings]
 
-        return Step(key, conditions, window)
+        return x, y
 
-    def __repr__(self):
-        d, fw = self.name, self.frame_window
 
-        return "{}, frame window: {}".format(d, fw)
+class Trigger(InputDevice):
+    def __init__(self, name, controller):
+        super(Trigger, self).__init__(name, controller)
+        self.default = 0.0
 
+    @property
+    def get_displacement(self):
+        return self.get_value()
+
+    def check(self):
+        return self.get_value() > ConIn.STICK_DEAD_ZONE
+
+    @staticmethod
+    def get_input(mapping):
+        return mapping.get_value()
 
