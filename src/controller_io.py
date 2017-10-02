@@ -1,0 +1,87 @@
+from src.controller import Button, Dpad, Controller
+from src.input_manager import ButtonMappingKey, ButtonMappingButton, ButtonMappingAxis, ButtonMappingHat
+from src.resources import load_resource
+from zs_globals import ControllerInputs as ConIn
+
+
+class ControllerIO:
+    #
+    # USB device / Keyboard mapping and input manager
+    #
+    #
+    # methods for loading a controller object from a cfg formatted text stream
+    # or json formatted dictionary
+    #
+
+    STEP_DICT = {
+        "neutral": ([lambda f: f[0] == (0, 0)], 1),
+        "up": ([lambda f: f[0][1] == -1], 1),
+        "left": ([lambda f: f[0][0] == -1], 1),
+        "right": ([lambda f: f[0][0] == 1], 1)
+    }
+    DEVICES_DICT = {
+        "button": Button,
+        "dpad": Dpad,
+        "button_map_key": ButtonMappingKey,
+        "button_map_button": ButtonMappingButton,
+        "button_map_axis": ButtonMappingAxis,
+        "button_map_hat": ButtonMappingHat
+    }
+
+    # return a controller object from a cfg formatted file
+    @staticmethod
+    def load_controller(file_name):
+        devices = load_resource(file_name)["devices"]
+
+        return ControllerIO.make_controller(
+            file_name, devices)
+
+    # return a controller object from a json formatted devices dict
+    @staticmethod
+    def make_controller(name, devices):
+        # print_dict(devices)
+        controller = Controller(name)
+
+        try:
+            for name in devices:
+                d = devices[name]
+                cls = ControllerIO.get_device_class(d)
+                mapping = ControllerIO.get_mapping(d)
+
+                device = cls(name, controller)
+                controller.add_device(
+                    device, mapping
+                )
+
+            return controller
+
+        except IndexError:
+            raise IOError("Unable to build controller " + name)
+        except AssertionError:
+            raise IOError("Unable to build controller " + name)
+
+    @staticmethod
+    def get_device_class(d):
+        return ControllerIO.DEVICES_DICT[d["class"]]
+
+    @staticmethod
+    def get_mapping(d):
+        def get_m(c, a):
+            return ControllerIO.DEVICES_DICT[c](*a)
+
+        if d["class"] == "button":
+            cls = d["mapping"][0]
+            args = d["mapping"][1:]
+            return get_m(cls, args)
+
+        if d["class"] == "dpad":
+            mappings = []
+            for direction in ConIn.UDLR:
+                cls = d[direction][0]
+                args = d[direction][1:]
+
+                mappings.append(
+                    get_m(cls, args)
+                )
+
+            return mappings

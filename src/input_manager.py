@@ -1,5 +1,5 @@
 import pygame
-
+from zs_globals import ControllerInputs as ConIn
 
 '''
 The following "Mapping" classes are basically just wrapper objects for interfacing
@@ -56,7 +56,7 @@ class ButtonMappingButton(ButtonMappingKey):
 
 
 class ButtonMappingAxis(ButtonMappingButton):
-    DEAD_ZONE = .1
+    DEAD_ZONE = ConIn.STICK_DEAD_ZONE
 
     def __init__(self, id_num, joy_device_name, joy_id, sign):
         super(ButtonMappingAxis, self).__init__(
@@ -117,9 +117,9 @@ class AxisMapping:
 
 
 class InputManager:
-    STICK_DEAD_ZONE = .1
+    STICK_DEAD_ZONE = ConIn.STICK_DEAD_ZONE
+    AXIS_MIN = ConIn.AXIS_MIN
     AXIS_NEUTRAL = False
-    AXIS_MIN = .9
     INPUT_DEVICES = []
 
     for J in range(pygame.joystick.get_count()):

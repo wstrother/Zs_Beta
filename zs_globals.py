@@ -103,3 +103,12 @@ class Events:
     LINK = "link"
     TARGET = "target"
     RESPONSE = "response"
+
+
+class ControllerInputs:
+    CONTROLLER_FRAME_DEPTH = 300
+    INIT_DELAY = 30
+    HELD_DELAY = 15
+    UDLR = "up", "down", "left", "right"
+    STICK_DEAD_ZONE = .1
+    AXIS_MIN = .9
