@@ -57,6 +57,7 @@ class Controller:
 
     # add a device / input mapping to the controller object
     def add_device(self, device, mapping):
+        device.controller = self
         self.mappings[device.name] = mapping
         self.devices.append(device)
 
@@ -97,10 +98,10 @@ class InputDevice:
     some devices have additional attributes that can be altered by the update method based on this
     data. Each device also defines a get_input method for producing frame data.
     """
-    def __init__(self, name, controller):
+    def __init__(self, name):
         self.name = name
         self.default = None
-        self.controller = controller
+        self.controller = None
 
     def __repr__(self):
         c = self.__class__.__name__
@@ -110,7 +111,8 @@ class InputDevice:
 
     # get frame cache for this device
     def get_frames(self):
-        return self.controller.get_device_frames(self.name)
+        if self.controller:
+            return self.controller.get_device_frames(self.name)
 
     # get most recent value from frame cache
     def get_value(self):
@@ -138,8 +140,8 @@ class Button(InputDevice):
     Button objects have a 'held' attribute that records the number of frames the
     button has been continuously held.
     """
-    def __init__(self, name, controller):
-        super(Button, self).__init__(name, controller)
+    def __init__(self, name):
+        super(Button, self).__init__(name)
 
         self.init_delay = ConIn.INIT_DELAY
         self.held_delay = ConIn.HELD_DELAY
@@ -203,15 +205,19 @@ class Dpad(InputDevice):
     on the frame interval of whichever Dpad button has been held the longest.
     Dpad objects have a 'last_direction' attribute that defaults to right (1, 0).
     """
-    def __init__(self, name, controller):
-        super(Dpad, self).__init__(name, controller)
+    def __init__(self, name):
+        super(Dpad, self).__init__(name)
         self.last_direction = (1, 0)
         self.default = (0, 0)
 
     def get_d_button(self, direction):
-        return self.controller.get_device(
-            self.name + "_" + direction
-        )
+        if self.controller:
+            return self.controller.get_device(
+                self.name + "_" + direction
+            )
+
+        else:
+            print("WARNING: no controller set for {}".format(self))
 
     def make_d_buttons(self):
         buttons = []
@@ -219,7 +225,7 @@ class Dpad(InputDevice):
         for direction in ConIn.UDLR:
             name = self.name + "_" + direction
             buttons.append(
-                Button(name, self.controller)
+                Button(name)
             )
 
         return buttons
@@ -292,9 +298,10 @@ class Dpad(InputDevice):
 
 
 class ThumbStick(InputDevice):
-    def __init__(self, name, controller):
-        super(ThumbStick, self).__init__(name, controller)
-        self.default = 0, 0
+    def __init__(self, name):
+        super(ThumbStick, self).__init__(name)
+        self.default = 0.0, 0.0
+        self.dead_zone = ConIn.STICK_DEAD_ZONE
 
     @property
     def x_axis(self):
@@ -316,7 +323,7 @@ class ThumbStick(InputDevice):
         return m
 
     def is_neutral(self):
-        return self.get_magnitude() < ConIn.STICK_DEAD_ZONE
+        return self.get_magnitude() < self.dead_zone
 
     def check(self):
         return not self.is_neutral()
@@ -329,16 +336,16 @@ class ThumbStick(InputDevice):
 
 
 class Trigger(InputDevice):
-    def __init__(self, name, controller):
-        super(Trigger, self).__init__(name, controller)
+    def __init__(self, name):
+        super(Trigger, self).__init__(name)
         self.default = 0.0
+        self.dead_zone = ConIn.STICK_DEAD_ZONE
 
-    @property
     def get_displacement(self):
         return self.get_value()
 
     def check(self):
-        return self.get_value() > ConIn.STICK_DEAD_ZONE
+        return self.get_value() > self.dead_zone
 
     @staticmethod
     def get_input(mapping):
