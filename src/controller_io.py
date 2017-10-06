@@ -1,5 +1,5 @@
-from src.controller import Button, Dpad, Controller
-from src.input_manager import ButtonMappingKey, ButtonMappingButton, ButtonMappingAxis, ButtonMappingHat
+from src.controller import Button, Dpad, Controller, Trigger, ThumbStick
+from src.input_manager import ButtonMappingKey, ButtonMappingButton, ButtonMappingAxis, ButtonMappingHat, AxisMapping
 from src.resources import load_resource
 from zs_globals import ControllerInputs as ConIn
 
@@ -13,19 +13,16 @@ class ControllerIO:
     # or json formatted dictionary
     #
 
-    STEP_DICT = {
-        "neutral": ([lambda f: f[0] == (0, 0)], 1),
-        "up": ([lambda f: f[0][1] == -1], 1),
-        "left": ([lambda f: f[0][0] == -1], 1),
-        "right": ([lambda f: f[0][0] == 1], 1)
-    }
     DEVICES_DICT = {
         "button": Button,
         "dpad": Dpad,
+        "trigger": Trigger,
+        "thumb_stick": ThumbStick,
         "button_map_key": ButtonMappingKey,
         "button_map_button": ButtonMappingButton,
         "button_map_axis": ButtonMappingAxis,
-        "button_map_hat": ButtonMappingHat
+        "button_map_hat": ButtonMappingHat,
+        "axis_map": AxisMapping,
     }
 
     # return a controller object from a cfg formatted file
@@ -46,9 +43,10 @@ class ControllerIO:
             for name in devices:
                 d = devices[name]
                 cls = ControllerIO.get_device_class(d)
-                mapping = ControllerIO.get_mapping(d)
 
-                device = cls(name, controller)
+                mapping = ControllerIO.get_mapping(d)
+                device = cls(name)
+
                 controller.add_device(
                     device, mapping
                 )
