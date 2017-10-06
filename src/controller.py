@@ -1,5 +1,5 @@
 from src.collections import CacheList
-from src.command_input import CommandInputManager
+# from src.command_input import CommandInputManager
 from zs_globals import ControllerInputs as ConIn
 from math import sqrt
 
@@ -23,9 +23,9 @@ class Controller:
         self.devices = []
         self.mappings = {}
 
-        self.command_manager = CommandInputManager(self)
-        self.add_command_input = self.command_manager.add_command_input
-        self.check_command = self.command_manager.check_command
+        # self.command_manager = CommandInputManager(self)
+        # self.add_command_input = self.command_manager.add_command_input
+        # self.check_command = self.command_manager.check_command
 
     def __repr__(self):
         c = self.__class__.__name__
@@ -75,7 +75,7 @@ class Controller:
         for d in self.devices:
             d.update()
 
-        self.command_manager.update()
+        # self.command_manager.update()
 
     # append frame data to frame cache object
     def update_frames(self):
@@ -350,4 +350,3 @@ class Trigger(InputDevice):
     @staticmethod
     def get_input(mapping):
         return mapping.get_value()
-
