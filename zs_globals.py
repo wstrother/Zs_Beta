@@ -60,7 +60,7 @@ class Resources:
     SOUNDS = RESOURCES, "sounds"
     STYLES = RESOURCES, "styles"
 
-    IMAGE_EXT = ".gif", ".png", ".jpg", ".svg"
+    IMAGE_EXT = "gif", "png", "jpg", "svg", "bmp", "ico"
     SOUND_EXT = ".wav", ".mp3", ".ogg", ".flac"
 
 
@@ -110,5 +110,6 @@ class ControllerInputs:
     INIT_DELAY = 30
     HELD_DELAY = 15
     UDLR = "up", "down", "left", "right"
+    AXES = "x_axis", "y_axis"
     STICK_DEAD_ZONE = .1
     AXIS_MIN = .9

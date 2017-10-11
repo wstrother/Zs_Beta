@@ -1,19 +1,6 @@
 from zs_globals import Cfg
 from src.collections import Group
 
-# ===================================
-# DEFINE THE DEFAULT CLASS DICTIONARY
-# ===================================
-
-from src.entities import Environment, Layer, Sprite
-CLASS_DICT = {
-        "Layer": Layer,
-        "Environment": Environment,
-        "Sprite": Sprite
-    }
-
-# ===================================
-
 
 def set_environment_context(env, class_dict, cfg, p=False):
     update_model(class_dict, cfg, env)

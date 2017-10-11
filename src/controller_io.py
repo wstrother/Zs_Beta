@@ -28,7 +28,7 @@ class ControllerIO:
     # return a controller object from a cfg formatted file
     @staticmethod
     def load_controller(file_name):
-        devices = load_resource(file_name)["devices"]
+        devices = load_resource(file_name + ".cfg")["devices"]
 
         return ControllerIO.make_controller(
             file_name, devices)
@@ -64,22 +64,21 @@ class ControllerIO:
 
     @staticmethod
     def get_mapping(d):
-        def get_m(c, a):
+        def get_m(md):
+            c = md[0]
+            a = md[1:]
+
             return ControllerIO.DEVICES_DICT[c](*a)
 
-        if d["class"] == "button":
-            cls = d["mapping"][0]
-            args = d["mapping"][1:]
-            return get_m(cls, args)
+        if d["class"] in ("button", "trigger"):
+            return get_m(d["mapping"])
 
         if d["class"] == "dpad":
-            mappings = []
-            for direction in ConIn.UDLR:
-                cls = d[direction][0]
-                args = d[direction][1:]
+            return [
+                get_m(d[direction]) for direction in ConIn.UDLR
+            ]
 
-                mappings.append(
-                    get_m(cls, args)
-                )
-
-            return mappings
+        if d["class"] == "thumb_stick":
+            return [
+                get_m(d[axis]) for axis in ConIn.AXES
+            ]

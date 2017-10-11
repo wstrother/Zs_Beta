@@ -148,8 +148,6 @@ class Button(InputDevice):
         self.held = 0
         self.default = 0
 
-        self.lifted = False
-
     # ignore / check give a method for getting discrete input intervals from a
     # continuous button push.
     # See zs_constants.py to adjust INIT_DELAY and HELD_DELAY values
@@ -169,8 +167,7 @@ class Button(InputDevice):
         return ignore
 
     def check(self):
-        if not self.lifted:
-            return self.held and not self.ignore
+        return bool(self.held and not self.ignore)
 
     # negative_edge returns True if a button was pushed the last frame and has just
     # been released. It returns False in all other cases.
@@ -188,9 +185,6 @@ class Button(InputDevice):
         return int(mapping.is_pressed())
 
     def update(self):
-        if not self.lifted:
-            self.lifted = 0 in self.get_frames()
-
         if self.get_value():
             self.held += 1
         else:

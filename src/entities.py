@@ -4,6 +4,9 @@ from src.cfg import save_cfg, format_dict
 from src.collections import Group
 from src.events import EventHandlerInterface
 from src.meters import Clock
+from src.controller_io import ControllerIO
+from src.context import set_environment_context
+from src.resources import load_resource
 from zs_globals import Cfg, Zs
 from zs_globals import Resources as Dirs
 
@@ -44,6 +47,8 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
         self.position = 0, 0
         self.init_order = []
 
+        self.visible = True
+        self.graphics = None
         self.clock = Clock("{}'s clock".format(name))
         self.update_methods = [
             self.clock.tick
@@ -85,7 +90,7 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
         self.cfg_dict[key] = text
 
         if Zs.PRINT_CFG_LOG:
-            print("\t{} value '{}' set to '{}'".format(
+            print("\t{} value '{}' set to: {}".format(
                 self, key, text
             ))
 
@@ -97,6 +102,14 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
     def print_cfg(self):
         print(format_dict(self.get_cfg()))
 
+    @property
+    def image(self):
+        if self.graphics:
+            return self.graphics.get_image()
+
+        else:
+            return False
+
     def add_to_list(self, list_name, item):
         l = getattr(self, list_name)
 
@@ -104,8 +117,10 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
             l.append(item)
             setattr(self, list_name, l)
 
-    def move(self, dx, dy):
+    def move(self, dx, dy, v=1):
         x, y = self.position
+        dx *= v
+        dy *= v
         self.set_position(x + dx, y + dy)
 
     def set_size(self, w, h):
@@ -132,9 +147,11 @@ class Layer(Entity):
 
         self.sub_layers = []
         self.groups = []
+        self.controllers = []
         self.parent_layer = None
 
         self.update_methods += [
+            self.update_controllers,
             self.update_sprites,
             self.update_sub_layers
         ]
@@ -154,6 +171,28 @@ class Layer(Entity):
         for g in groups:
             self.add_to_list(Cfg.GROUPS, g)
 
+    def set_controller(self, arg):
+        if type(arg) is str:
+            cont = ControllerIO.load_controller(arg)
+
+        else:
+            name = list(arg.keys())[0]
+            cont = ControllerIO.make_controller(
+                name, arg[name]
+            )
+
+        self.add_to_list(
+            "controllers", cont
+        )
+
+    def set_controllers(self, *controllers):
+        for c in controllers:
+            self.set_controller(c)
+
+    def update_controllers(self):
+        for c in self.controllers:
+            c.update()
+
     def update_sprites(self):
         for g in self.groups:
             for sprite in g.sprites:
@@ -162,6 +201,26 @@ class Layer(Entity):
     def update_sub_layers(self):
         for layer in self.sub_layers:
             layer.update()
+
+    def draw(self, screen, offset=(0, 0), draw_point=(0, 0)):
+        if self.graphics and self.visible:
+            screen.blit(
+                self.graphics.get_image(), draw_point)
+
+        self.draw_items(
+            screen, offset=offset)
+
+    def draw_items(self, canvas, offset=(0, 0)):
+        ox, oy = offset
+
+        for group in self.groups:
+            for item in group.sprites:
+                if item.graphics and item.image and item.visible:
+                    x, y = item.position
+                    x += ox
+                    y += oy
+
+                    canvas.blit(item.image, (x, y))
 
 
 class Environment(Layer):
@@ -223,8 +282,25 @@ class Environment(Layer):
         path = join(*Dirs.ENVIRONMENTS + (file_name,))
         save_cfg(self.get_state_as_cfg(), path, p=p)
 
-    def main(self):
+    @staticmethod
+    def make_from_cfg(name, class_dict=None):
+        if not class_dict:
+            class_dict = CLASS_DICT
+
+        env = Environment(name)
+        cfg = load_resource(name + ".cfg")
+
+        set_environment_context(
+            env, class_dict, cfg
+        )
+
+        return env
+
+    def main(self, screen):
         self.update()
+
+        for layer in self.sub_layers:
+            layer.draw(screen)
 
 
 class Sprite(Entity):
@@ -242,4 +318,14 @@ class Sprite(Entity):
         self.group = group.name
         group.add_member(self)
 
+# ===================================
+# DEFINE THE DEFAULT CLASS DICTIONARY
+# ===================================
 
+CLASS_DICT = {
+        "Layer": Layer,
+        "Environment": Environment,
+        "Sprite": Sprite
+    }
+
+# ===================================

@@ -2,8 +2,6 @@ from sys import exit, argv
 
 import pygame
 
-from src.resources import load_resource
-from src.context import set_environment_context, CLASS_DICT
 from src.entities import Environment
 from zs_globals import Settings
 
@@ -34,43 +32,40 @@ class Game:
                 exit()
 
     def main(self):
-        print("GAME INITIALIZED\nmain() called")
+        # print("GAME INITIALIZED\nmain() called")
         # PYGAME CHOKE POINT
 
         clock = pygame.time.Clock()         # clock object used to set max frame_rate
 
         while True:
-            # self.poll_events()
+            self.poll_events()
             self.main_routine(clock)
-            # pygame.display.flip()
+            pygame.display.flip()
 
     def main_routine(self, clock=None):
-        print("\n\n======================")
+        # print("\n\n======================")
 
         # dt value can be printed to stdout or passed to data model
         if clock:
             dt = clock.tick(self.frame_rate) / 1000
             self.environment.model["dt"] = dt
-            print(dt)
+            # print(dt)
 
         # screen is set to black and passed to environment's main method
-        # self.screen.fill((0, 0, 0))
-        # self.environment.main(self.screen)
+        self.screen.fill((0, 0, 0))
+        self.environment.main(self.screen)
 
 
 if __name__ == "__main__":
 
     if len(argv) > 1:
         env_name = argv[1]
-        # scr = pygame.display.set_mode(Settings.SCREEN_SIZE)
+        scr = pygame.display.set_mode(Settings.SCREEN_SIZE)
         scr = None
         fps = Settings.FRAME_RATE / 60
         p = 'print' in argv
 
-        cfg = load_resource(env_name + ".cfg")
-        env = Environment(env_name)
-        set_environment_context(
-            env, CLASS_DICT, cfg, p=p)
+        env = Environment.make_from_cfg(env_name)
 
         "START ENV: {}".format(env)
         Game(scr, fps, env).main()

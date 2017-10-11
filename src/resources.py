@@ -1,7 +1,7 @@
 from os import listdir
 from os.path import join
 
-# import pygame                           # PYGAME CHOKE POINT
+import pygame                           # PYGAME CHOKE POINT
 
 from src.cfg import load_cfg, load_json
 from zs_globals import Resources as Res
@@ -66,7 +66,7 @@ def load_resource(file_name, section=None):
 
     else:
         ext = file_name.split(".")[-1]
-
+        print(file_name, ext)
         if ext == Res.CFG:
             path = get_path(Res.CFG, file_name)
 
@@ -74,6 +74,7 @@ def load_resource(file_name, section=None):
             path = get_path(Res.JSON, file_name)
 
         elif ext in Res.IMAGE_EXT:
+            print("IMAGE")
             path = get_path(IMAGES, file_name)
 
         elif ext in Res.SOUND_EXT:
@@ -96,9 +97,9 @@ def get_object(ext, path):
     if ext == Res.JSON:
         return load_json(path)
 
-    # if ext in Res.IMAGE_EXT:
-    #     return pygame.image.load(path)              # PYGAME CHOKE POINT
-    #
+    if ext in Res.IMAGE_EXT:
+        return pygame.image.load(path)              # PYGAME CHOKE POINT
+
     # if ext in Res.SOUND_EXT:
     #     return pygame.mixer.Sound(path)             # PYGAME CHOKE POINT
 

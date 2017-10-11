@@ -68,7 +68,7 @@ def string_to_value(s):
 
         # quotation expression      "some string here"
         if s[0] == "\"" and s[-1] == "\"":
-            value = s[1:-1]
+            value = s
 
         # true keyword              true
         elif s == Cfg.TRUE_KEYWORD:
@@ -158,8 +158,8 @@ def format_dict(d, t=0):
                     rhs += ","
             else:
                 rhs = get_str(value)
-                if "," in rhs:
-                    rhs = "\"{}\"".format(rhs)
+                # if "," in rhs:
+                #     rhs = "\"{}\"".format(rhs)
 
             output += tab + str(key) + ": " + rhs + "\n"
 
