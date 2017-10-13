@@ -1,7 +1,7 @@
 from src.entities import Environment
 from src.cfg import format_dict
 from game import Game
-from src.graphics import ImageGraphics
+from src.graphics import AnimationGraphics, TextGraphics
 from zs_globals import Settings
 
 import pygame
@@ -13,7 +13,8 @@ sl.set_controller("default_controller")
 
 ds = env.model["Demo Sprite"]
 r = (0, 0), (50, 50)
-gfx = ImageGraphics(ds, "squirrel.gif", r)
+# gfx = AnimationGraphics.load_from_cfg(ds, "squirrel_animations.cfg")
+gfx = TextGraphics(ds, "Hello World")
 ds.graphics = gfx
 
 print(format_dict(
@@ -41,7 +42,7 @@ def move():
 
     if dpad.held:
         dx, dy = dpad.get_direction()
-        ds.move(dx, dy, 5)
+        ds.move(dx, dy, 1.5)
 
 
 ds.update_methods.append(move)

@@ -109,3 +109,12 @@ def get_object(ext, path):
         file.close()
 
         return text
+
+
+def get_font(name, size, bold, italic):
+    # PYGAME CHOKE POINT
+
+    path = pygame.font.match_font(name, bold, italic)
+    font = pygame.font.Font(path, size)
+
+    return font

@@ -51,7 +51,8 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
         self.graphics = None
         self.clock = Clock("{}'s clock".format(name))
         self.update_methods = [
-            self.clock.tick
+            self.clock.tick,
+            self.update_graphics
         ]
 
     def __repr__(self):
@@ -132,6 +133,10 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
     def update(self):
         for m in self.update_methods:
             m()
+
+    def update_graphics(self):
+        if self.graphics:
+            self.graphics.update()
 
 
 class Layer(Entity):
@@ -216,6 +221,7 @@ class Layer(Entity):
         for group in self.groups:
             for item in group.sprites:
                 if item.graphics and item.image and item.visible:
+
                     x, y = item.position
                     x += ox
                     y += oy
@@ -297,10 +303,10 @@ class Environment(Layer):
         return env
 
     def main(self, screen):
-        self.update()
-
         for layer in self.sub_layers:
             layer.draw(screen)
+
+        self.update()
 
 
 class Sprite(Entity):
