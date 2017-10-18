@@ -68,6 +68,9 @@ class Controller:
             for i in range(4):
                 self.add_device(buttons[i], mapping[i])
 
+    def remap_device(self, device_name, mapping):
+        self.mappings[device_name] = mapping
+
     # update frame input data and call device update methods
     def update(self):
         self.update_frames()
@@ -89,6 +92,42 @@ class Controller:
             )
 
         self.frames.append(frame)
+
+    def get_cfg(self):
+        devices = {}
+
+        for device in self.devices:
+            devices[device.name] = self.get_device_cfg(device)
+
+        return {self.name: {
+            "devices": devices
+        }}
+
+    @staticmethod
+    def get_device_cfg(device):
+        d = {}
+        class_dict = {
+            Button: "button",
+            Dpad: "dpad",
+            ThumbStick: "thumb_stick",
+            Trigger: "trigger"
+        }
+        d["class"] = class_dict[device.__class__]
+
+        if d["class"] in ("button", "trigger"):
+            d["mapping"] = str(device.mapping)
+
+        if d["class"] == "dpad":
+            d["up"] = str(device.up)
+            d["left"] = str(device.left)
+            d["down"] = str(device.down)
+            d["right"] = str(device.right)
+
+        if d["class"] == "thumb_stick":
+            d["x_axis"] = str(device.x_axis)
+            d["y_axis"] = str(device.y_axis)
+
+        return d
 
 
 class InputDevice:

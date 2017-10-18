@@ -63,6 +63,9 @@ class AnimationGraphics(ImageGraphics):
         )
         self.image_sets = self.get_image_sets(animations)
 
+    def get_animation_states(self):
+        return list(self.animations.keys())
+
     def get_image_sets(self, animations):
         sets = {}
 
@@ -72,7 +75,7 @@ class AnimationGraphics(ImageGraphics):
                     self.image,
                     a.get_cell_position(i),
                     a.cell_size
-                ) for i in range(a.length - 1)
+                ) for i in range(a.length)
             ]
 
         return sets
@@ -82,7 +85,7 @@ class AnimationGraphics(ImageGraphics):
         a = self.get_animation(state)
 
         self.animation_meter.reset()
-        self.animation_meter.maximum = ((a.length - 1) * a.frame_rate) - 1
+        self.animation_meter.maximum = (a.length * a.frame_rate) - 1
 
     def get_image(self):
         a = self.get_animation()
@@ -153,11 +156,15 @@ DEFAULT_STYLE = {
 
 class TextGraphics(Graphics):
     def __init__(self, entity, text):
+        super(TextGraphics, self).__init__(entity)
         if type(text) not in (str, list):
             text = str(text)
-        self.text = text
 
-        super(TextGraphics, self).__init__(entity)
+        self.text = []
+        self.set_text(text)
+
+    def set_text(self, text):
+        self.text = text
         self.image = self.make_image()
 
     def make_image(self):

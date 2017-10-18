@@ -69,11 +69,15 @@ class EventHandler:
         for listener in self.listeners:
             if listener[Events.NAME] == event[Events.NAME]:
                 target = listener[Events.TARGET]
+
                 response = listener.get(Events.RESPONSE, event.copy())
+                response = self.interpret(response)
+                response[Events.TRIGGER] = event.copy()
+
                 target.handle_event(response)
 
                 if listener.get(Events.TEMP, False):
-                    self.remove_listener(**listener)
+                    self.remove_listener(listener)
 
     def add_listener(self, *listeners):
         for l in listeners:
@@ -81,16 +85,19 @@ class EventHandler:
             l[Events.TARGET] = l.get(Events.TARGET, self.entity)
             self.listeners.append(l)
 
-    def remove_listener(self, name, response=None, target=None):
+    def remove_listener(self, listener):
         remove = []
+        name = listener[Events.NAME]
 
         for l in self.listeners:
             match = l[Events.NAME] == name
+            response = listener.get(Events.RESPONSE, False)
             if response:
-                match = l[Events.RESPONSE] = response
+                match = l[Events.RESPONSE] == response
 
+            target = listener.get(Events.TARGET, False)
             if target:
-                match = l[Events.TARGET] = target
+                match = l[Events.TARGET] == target
 
             if match:
                 remove.append(l)

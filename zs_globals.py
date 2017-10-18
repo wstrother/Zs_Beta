@@ -85,7 +85,8 @@ class Events:
         TIMER: Timer(DURATION),
         DURATION: int=1,
         LERP: bool=True,
-        LINK: event=None
+        LINK: event=None,
+        TRIGGER: event=None
     }
 
     listener = {
@@ -103,6 +104,7 @@ class Events:
     LINK = "link"
     TARGET = "target"
     RESPONSE = "response"
+    TRIGGER = "trigger"
 
 
 class ControllerInputs:

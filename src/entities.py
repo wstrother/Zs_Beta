@@ -290,15 +290,14 @@ class Environment(Layer):
 
     @staticmethod
     def make_from_cfg(name, class_dict=None):
-        if not class_dict:
-            class_dict = CLASS_DICT
+        cd = CLASS_DICT.copy()
+        if class_dict:
+            cd.update(class_dict)
 
         env = Environment(name)
         cfg = load_resource(name + ".cfg")
 
-        set_environment_context(
-            env, class_dict, cfg
-        )
+        set_environment_context(env, cd, cfg)
 
         return env
 

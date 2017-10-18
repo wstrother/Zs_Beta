@@ -18,7 +18,7 @@ class ButtonMappingKey:
         self.id_num = id_num
 
     def __repr__(self):
-        return "Button Map Key: {}".format(self.get_key_name())
+        return ", ".join(self.get_args())
 
     def get_args(self):
         return ["button_map_key", self.get_key_name()]
@@ -80,6 +80,13 @@ class ButtonMappingHat(ButtonMappingButton):
         super(ButtonMappingHat, self).__init__(id_num, joy_device_name, joy_id)
         self.position = position
         self.axis = axis
+
+    def __repr__(self):
+        return "button_map_button, {}, {}, {}".format(
+            self.id_num,
+            self.joy_device.get_name(),
+            self.joy_device.get_id()
+        )
 
     def get_args(self):
         return ["button_map_hat", self.id_num,

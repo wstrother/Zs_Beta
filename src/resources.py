@@ -66,7 +66,7 @@ def load_resource(file_name, section=None):
 
     else:
         ext = file_name.split(".")[-1]
-        print(file_name, ext)
+        # print(file_name, ext)
         if ext == Res.CFG:
             path = get_path(Res.CFG, file_name)
 
@@ -74,7 +74,6 @@ def load_resource(file_name, section=None):
             path = get_path(Res.JSON, file_name)
 
         elif ext in Res.IMAGE_EXT:
-            print("IMAGE")
             path = get_path(IMAGES, file_name)
 
         elif ext in Res.SOUND_EXT:
