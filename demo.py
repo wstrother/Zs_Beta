@@ -239,52 +239,15 @@ def demo_graphics():
     ds.update_methods.append(move)
 
     Game(scr, 60, env).main()
-# /*
-#
-# sl = env.model["Sprite Layer"]
-# sl.set_controller("default_controller")
-#
-
-#
-# print(format_dict(
-#     env.get_state_as_cfg())
-# )
-#
-#
-# # def print_sprite():
-# #     output = ["."] * 20
-# #     output[ds.position[0] % 20] = "X"
-# #     output = "".join(output)
-# #
-# #     c = sl.controllers[0]
-# #     dpad = c.get_device("Dpad")
-# #
-# #     if dpad.held:
-# #         print(output)
-# #
-# # sl.update_methods.append(print_sprite)
-#
-#
-# def move():
-#     c = sl.controllers[0]
-#     dpad = c.get_device("Dpad")
-#
-#     if dpad.held:
-#         dx, dy = dpad.get_direction()
-#         ds.move(dx, dy, 1.5)
-#
-#
-# ds.update_methods.append(move)
-#
 
 if __name__ == "__main__":
     demos = [
-        # demo_cfg,
-        # demo_resources,
-        # demo_events,
-        # demo_entities,
-        # demo_context,
-        # demo_controller,
+        demo_cfg,
+        demo_resources,
+        demo_events,
+        demo_entities,
+        demo_context,
+        demo_controller,
         demo_graphics
     ]
 

@@ -56,19 +56,20 @@ class Game:
         self.environment.main(self.screen)
 
 
+def start(start_env, class_dict=None):
+    scr = pygame.display.set_mode(Settings.SCREEN_SIZE)
+    fps = Settings.FRAME_RATE
+
+    env = Environment.make_from_cfg(
+        start_env, class_dict=class_dict
+    )
+
+    Game(scr, fps, env).main()
+
+
 if __name__ == "__main__":
 
     if len(argv) > 1:
-        env_name = argv[1]
-        scr = pygame.display.set_mode(Settings.SCREEN_SIZE)
-        scr = None
-        fps = Settings.FRAME_RATE / 60
-        p = 'print' in argv
-
-        env = Environment.make_from_cfg(env_name)
-
-        "START ENV: {}".format(env)
-        Game(scr, fps, env).main()
-
+        start(argv[1])
     else:
         print("Please specify a start environment")

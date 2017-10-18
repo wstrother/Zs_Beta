@@ -71,6 +71,7 @@ class Resources:
 class Settings:
     SCREEN_SIZE = 1100, 600
     FRAME_RATE = 60
+    APP_START = "app_start"
 
 
 # ===============
