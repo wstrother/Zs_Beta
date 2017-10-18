@@ -1,0 +1,7 @@
+CLASS_DICT = {
+	class_key: ClassName,
+	...
+}
+
+env = START_ENV(CLASS_DICT)
+g = game(SCREEN, FPS, env)
