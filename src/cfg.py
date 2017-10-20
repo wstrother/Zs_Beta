@@ -282,17 +282,20 @@ def get_section(s, ordered=False):
     for name in item_names:
         i = item_names.index(name)
         item_str = item_strings[i]
-        section[name] = get_item(item_str)
+        section[name] = get_item(item_str, ordered=ordered)
 
     return section
 
 
-def get_item(s):
+def get_item(s, ordered=False):
     """
     get a dict object from a single CFG formatted item expression
     """
     lines = [l for l in s.split("\n") if (l and l[0] == "\t")]
-    item = {}
+    if not ordered:
+        item = {}
+    else:
+        item = OrderedDict()
 
     for line in lines:
         line = line[1:]

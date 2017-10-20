@@ -1,4 +1,5 @@
 from app.interfaces.controller_interface import ControllerInterface
+from app.interfaces.gui_interface import GuiInterface
 
 from app.sprites.animation_sprite import AnimationSprite
 from app.sprites.hud_sprite import HudSprite
@@ -16,6 +17,7 @@ class_dict = {cls.__name__: cls for cls in (
 game = start(
     Settings.APP_START,
     class_dict,
-    ControllerInterface
+    ControllerInterface,
+    GuiInterface
 ).main()
 

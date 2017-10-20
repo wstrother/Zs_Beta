@@ -12,7 +12,7 @@ DEFAULT_STYLE = {
     "text_newline": False,
     "border_size": (5, 5),
     "buffers": (5, 5),
-    "aligns": ("c", "b")
+    "aligns": ("r", "b")
 }
 
 
@@ -46,6 +46,7 @@ class BlockSprite(GuiSprite):
 
     def update_pointer(self):
         ControllerInterface.move_pointer(self)
+        ControllerInterface.check_activation(self)
         self.last = self.members.active_member
 
     def move_pointer(self, x, y):
@@ -67,6 +68,10 @@ class BlockSprite(GuiSprite):
     def handle_deselect(sprite):
         sprite.queue_event("deselect")
 
+    @staticmethod
+    def handle_activation(sprite):
+        sprite.queue_event("activate")
+
     def set_members(self, table):
         new_table = []
         for key in sorted(table.keys()):
@@ -78,8 +83,8 @@ class BlockSprite(GuiSprite):
             new_table.append(new_row)
 
         self.members.table = self.get_sprites_from_table(new_table)
-        self.set_table_positions()
         self.set_size(*self.size)
+        self.set_table_positions()
 
     def set_table_positions(self):
         style = self.style
@@ -93,6 +98,17 @@ class BlockSprite(GuiSprite):
 
     def get_members(self):
         return self.members.member_list
+
+    def get_option(self, text):
+        if type(text) is str:
+            for sprite in self.members.member_list:
+                if sprite.text == text:
+
+                    return sprite
+
+        elif type(text) is int:
+            i = text
+            return self.members.member_list[i]
 
     def set_group(self, group):
         super(BlockSprite, self).set_group(group)
@@ -161,3 +177,6 @@ class TextSprite(GuiSprite):
     def on_deselect(self):
         self.style = {"font_color": (255, 255, 255)}
         self.set_text(self.text)
+
+    def on_activate(self):
+        print(self.text)

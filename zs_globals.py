@@ -23,7 +23,7 @@ class Cfg:
 
     # items in these sections will be initialized in order
 
-    ORDERED_SECTIONS = (POPULATE,)
+    ORDERED_SECTIONS = (POPULATE, "gui interface")
 
     # value keywords
 

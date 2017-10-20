@@ -24,6 +24,9 @@ class ApplicationInterface:
         pass
 
     def get_value_from_model(self, value):
+        if type(value) is tuple:
+            value = list(value)
+
         return value_from_key_lookup(
             value, self.class_dict, self.environment.model
         )
