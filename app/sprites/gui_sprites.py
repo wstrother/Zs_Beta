@@ -1,70 +1,71 @@
 from src.entities import Sprite
-from app.sprites.text_sprite import TextSprite
+from src.flex import MemberTable
+from src.graphics import TextGraphics, RectGraphics
+from app.interfaces.controller_interface import ControllerInterface
+
+DEFAULT_STYLE = {
+    "font_name": "courier-new",
+    "font_size": 15,
+    "font_color": (255, 255, 255),
+    "text_buffer": 5,
+    "text_cutoff": 20,
+    "text_newline": False,
+    "border_size": (5, 5),
+    "buffers": (5, 5),
+    "aligns": ("c", "b")
+}
 
 
-class MemberTable:
-    def __init__(self):
-        self.table = [[]]
-        self.pointer = 0, 0
+class GuiSprite(Sprite):
+    def __init__(self, name):
+        super(GuiSprite, self).__init__(name)
+        self._style = DEFAULT_STYLE.copy()
 
     @property
-    def active_member(self):
-        return self.get_member(*self.pointer)
+    def style(self):
+        return self._style
 
-    @property
-    def member_list(self):
-        l = []
-        for row in self.table:
-            for item in row:
-                l.append(item)
-
-        return l
-
-    def get_member(self, i, j):
-        return self.table[i][j]
-
-    def can_select(self, i, j):
-        try:
-            return self.get_member(i, j) is not None
-        except IndexError:
-            return False
-
-    def move_pointer(self, x, y):
-        i, j = self.pointer
-        table = self.table
-        start = [i, j]
-
-        cycling = True
-        while cycling:
-            if x != 0:
-                j += x
-                cells = len(table[i]) - 1
-
-                if j > cells:
-                    j = 0
-                elif j < 0:
-                    j = cells
-
-            if y != 0:
-                i += y
-                rows = len(table) - 1
-
-                if i > rows:
-                    i = 0
-                elif i < 0:
-                    i = rows
-
-            self.pointer = [i, j]
-            cycling = not self.can_select(*self.pointer)
-
-            if self.pointer == start:
-                cycling = False
+    @style.setter
+    def style(self, value):
+        self._style.update(value)
 
 
-class BlockSprite(Sprite):
+class BlockSprite(GuiSprite):
     def __init__(self, name):
         super(BlockSprite, self).__init__(name)
+        self.init_order += [
+            "members", "group", "size", "position"
+        ]
         self.members = MemberTable()
+        self.graphics = RectGraphics(self)
+        self.last = None
+
+        self.update_methods += [
+            self.update_pointer
+        ]
+
+    def update_pointer(self):
+        ControllerInterface.move_pointer(self)
+        self.last = self.members.active_member
+
+    def move_pointer(self, x, y):
+        self.members.move_pointer(x, y)
+
+        active = self.members.active_member
+        last = self.last
+
+        if last != active:
+            self.handle_select(active)
+            if last:
+                self.handle_deselect(last)
+
+    @staticmethod
+    def handle_select(sprite):
+        sprite.queue_event("select")
+
+    @staticmethod
+    def handle_deselect(sprite):
+        sprite.queue_event("deselect")
 
     def set_members(self, table):
         new_table = []
@@ -76,7 +77,19 @@ class BlockSprite(Sprite):
 
             new_table.append(new_row)
 
-        self.get_sprites_from_table(new_table)
+        self.members.table = self.get_sprites_from_table(new_table)
+        self.set_table_positions()
+        self.set_size(*self.size)
+
+    def set_table_positions(self):
+        style = self.style
+        self.members.set_member_position(
+            self.position, self.size,
+            style["border_size"],
+            style["buffers"],
+            style["aligns"]
+        )
+        self.reset_image()
 
     def get_members(self):
         return self.members.member_list
@@ -87,20 +100,64 @@ class BlockSprite(Sprite):
         for sprite in self.get_members():
             sprite.set_group(group)
 
-    def get_sprites_from_table(self, table):
+    def set_position(self, x, y):
+        super(BlockSprite, self).set_position(x, y)
+
+        self.set_table_positions()
+
+    def set_size(self, w, h):
+        super(BlockSprite, self).set_size(w, h)
+
+        style = self.style
+        self.size = self.members.adjust_size(
+            self.size, style["border_size"],
+            style["buffers"]
+        )
+        self.set_table_positions()
+        self.reset_image()
+
+    def reset_image(self):
+        self.graphics.image = self.graphics.make_image()
+
+    @staticmethod
+    def get_sprites_from_table(table):
         new_table = []
-        y = 0
+
         for row in table:
-            x = 0
             new_row = []
             for item in row:
-                ts = TextSprite(str(item))
-                ts.set_text(str(item))
-                ts.set_position(x, y)
-                new_row.append(ts)
+                if item is not None:
+                    ts = TextSprite(str(item))
+                    ts.set_text(str(item))
+                    new_row.append(ts)
+                else:
+                    new_row.append(None)
 
-                x += 100
-            y += 100
             new_table.append(new_row)
 
-        self.members.table = new_table
+        return new_table
+
+    def on_spawn(self):
+        self.handle_select(self.members.active_member)
+
+
+class TextSprite(GuiSprite):
+    def __init__(self, name):
+        super(TextSprite, self).__init__(name)
+        self.graphics = TextGraphics(self, "")
+        self.text = ""
+
+    def set_text(self, text):
+        self.text = text
+        self.graphics.set_text(text)
+        self.set_size(
+            *self.graphics.get_image().get_size()
+        )
+
+    def on_select(self):
+        self.style = {"font_color": (0, 255, 0)}
+        self.set_text(self.text)
+
+    def on_deselect(self):
+        self.style = {"font_color": (255, 255, 255)}
+        self.set_text(self.text)

@@ -1,4 +1,4 @@
-from app.sprites.text_sprite import TextSprite
+from app.sprites.gui_sprites import TextSprite
 
 
 class HudSprite(TextSprite):

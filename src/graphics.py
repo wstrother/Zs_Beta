@@ -166,10 +166,9 @@ class TextGraphics(Graphics):
         self.image = self.make_image()
 
     def make_image(self):
-        if getattr(self.entity, "style", False):
-            style = self.entity.style
-        else:
-            style = DEFAULT_STYLE
+        style = self.entity.style
+        # if getattr(self.entity, "style", False):
+        #     style.update(self.entity.style)
 
         font_name = style["font_name"]
         size = style["font_size"]

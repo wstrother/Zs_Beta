@@ -55,6 +55,8 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
             self.update_graphics
         ]
 
+        self.queue_event("spawn")
+
     def __repr__(self):
         c = self.__class__.__name__
         n = self.name
@@ -302,7 +304,11 @@ class Environment(Layer):
         return env
 
     def apply_context_interface(self, class_dict, interface):
-        interface(class_dict, self).apply_interface()
+        interface(class_dict, self).apply_interface(
+            load_resource(
+                self.name, section=interface.INTERFACE_NAME
+            )
+        )
 
     def main(self, screen):
         for layer in self.sub_layers:
@@ -321,10 +327,14 @@ class Sprite(Entity):
         super(Sprite, self).__init__(name)
 
         self.group = None
+        self.controller = None
 
     def set_group(self, group):
         self.group = group.name
         group.add_member(self)
+
+    def set_controller(self, layer, index):
+        self.controller = layer.controllers[index]
 
 # ===================================
 # DEFINE THE DEFAULT CLASS DICTIONARY

@@ -2,20 +2,13 @@ from app.interface import ApplicationInterface
 
 
 class ControllerInterface(ApplicationInterface):
+    INTERFACE_NAME = "controller interface"
     DPAD = "Dpad"
 
     def __init__(self, class_dict, environment):
         super(ControllerInterface, self).__init__(
-            class_dict, environment, "controller interface"
-        )
-
-    def get_interface_method(self, method_name, entity, *args):
-        args = self.get_value_from_model(list(args))
-        layer = args.pop(0)
-        args[0] = layer.controllers[args[0]]
-
-        return super(ControllerInterface, self).get_interface_method(
-            method_name, entity, *args
+            class_dict, environment,
+            ControllerInterface.INTERFACE_NAME
         )
 
     def handle_entity(self, method_name, entity, *args):
@@ -26,16 +19,30 @@ class ControllerInterface(ApplicationInterface):
         )
 
     @staticmethod
-    def move(sprite, controller, speed):
-        dpad = controller.get_device(ControllerInterface.DPAD)
+    def move_pointer(sprite):
+        dpad = sprite.controller.get_device(
+            ControllerInterface.DPAD
+        )
+
+        if dpad.check():
+            dx, dy = dpad.get_direction()
+            sprite.move_pointer(dx, dy)
+
+    @staticmethod
+    def move(sprite, speed):
+        dpad = sprite.controller.get_device(
+            ControllerInterface.DPAD
+        )
 
         if dpad.held:
             dx, dy = dpad.get_direction()
             sprite.move(dx, dy, speed)
 
     @staticmethod
-    def cycle_animation(sprite, controller, button):
-        b = controller.get_device(button)
+    def cycle_animation(sprite, button):
+        b = sprite.controller.get_device(
+            button
+        )
 
         if b.check():
             names = sprite.get_animation_states()
