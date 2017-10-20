@@ -56,7 +56,7 @@ class Game:
         self.environment.main(self.screen)
 
 
-def start(start_env, class_dict=None):
+def start(start_env, class_dict, *apps):
     scr = pygame.display.set_mode(Settings.SCREEN_SIZE)
     fps = Settings.FRAME_RATE
 
@@ -64,12 +64,17 @@ def start(start_env, class_dict=None):
         start_env, class_dict=class_dict
     )
 
-    Game(scr, fps, env).main()
+    for app in apps:
+        env.apply_context_interface(
+            class_dict, app
+        )
+
+    return Game(scr, fps, env)
 
 
 if __name__ == "__main__":
 
     if len(argv) > 1:
-        start(argv[1])
+        start(argv[1], None).main()
     else:
         print("Please specify a start environment")

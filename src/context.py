@@ -44,7 +44,9 @@ def update_model(class_dict, cfg, environment, p=False):
                     )(name)
 
             else:
-                item = entry
+                item = value_from_key_lookup(
+                    entry, class_dict, model
+                )
 
             if section != Cfg.POPULATE:
                 if p:

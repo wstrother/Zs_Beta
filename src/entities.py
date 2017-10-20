@@ -301,6 +301,9 @@ class Environment(Layer):
 
         return env
 
+    def apply_context_interface(self, class_dict, interface):
+        interface(class_dict, self).apply_interface()
+
     def main(self, screen):
         for layer in self.sub_layers:
             layer.draw(screen)

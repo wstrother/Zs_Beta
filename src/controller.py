@@ -39,6 +39,8 @@ class Controller:
             if d.name == name:
                 return self.devices.index(d)
 
+        raise ValueError("no device with name {}".format(name))
+
     # returns device object for a given device name
     def get_device(self, name):
         return self.devices[

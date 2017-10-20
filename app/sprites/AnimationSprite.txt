@@ -1,4 +1,0 @@
-set_animation: cfg file name
-set_animation_state: animation name
-
-movable

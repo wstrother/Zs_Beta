@@ -6,7 +6,6 @@ class TextSprite(Sprite):
     def __init__(self, name):
         super(TextSprite, self).__init__(name)
         self.graphics = TextGraphics(self, "")
-
         self.text = ""
 
     def set_text(self, text):

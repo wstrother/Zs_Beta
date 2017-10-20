@@ -1,13 +1,21 @@
-from src.graphics import TextGraphics
 from app.sprites.text_sprite import TextSprite
 
 
 class HudSprite(TextSprite):
     def __init__(self, name):
         super(HudSprite, self).__init__(name)
-        self.graphics = TextGraphics(self, "")
 
         self.hud_field = None
 
-    def set_hud_field(self, target, attribute):
-        self.hud_field = target, attribute
+        self.update_methods += [
+            self.update_text
+        ]
+
+    def set_hud_field(self, target, attribute, default=""):
+        self.hud_field = target, attribute, default
+
+    def update_text(self):
+        text = getattr(*self.hud_field)
+
+        if self.text != text:
+            self.set_text(text)
