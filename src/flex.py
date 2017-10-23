@@ -5,7 +5,8 @@ class MemberTable:
 
     @property
     def active_member(self):
-        return self.get_member(*self.pointer)
+        if self.member_list:
+            return self.get_member(*self.pointer)
 
     @property
     def member_list(self):
@@ -22,9 +23,13 @@ class MemberTable:
 
     def can_select(self, i, j):
         try:
-            return self.get_member(i, j) is not None
+            return self.select_function(self.get_member(i, j))
         except IndexError:
             return False
+
+    @staticmethod
+    def select_function(item):
+        return item is not None
 
     def move_pointer(self, x, y):
         i, j = self.pointer
@@ -107,7 +112,7 @@ class MemberTable:
 
         return row_w, row_h
 
-    def set_member_position(self, position, size, border_size, buffers, aligns):
+    def set_member_positions(self, position, size, border_size, buffers, aligns):
         if self.member_list:
             parent_x, parent_y = position
             w, h = size

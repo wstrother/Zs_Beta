@@ -164,11 +164,12 @@ class TextGraphics(Graphics):
     def set_text(self, text):
         self.text = text
         self.image = self.make_image()
+        self.entity.set_size(
+            *self.image.get_size()
+        )
 
     def make_image(self):
         style = self.entity.style
-        # if getattr(self.entity, "style", False):
-        #     style.update(self.entity.style)
 
         font_name = style["font_name"]
         size = style["font_size"]

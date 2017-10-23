@@ -58,11 +58,14 @@ def load_resource(file_name, section=None):
             return load_resource(file_name)[section]
 
         except KeyError:
-            raise ValueError(
-                "No '{}' section found in {}".format(
+            warning = "No '{}' section found in {}".format(
                     section, file_name
                 )
-            )
+            print(warning)
+            # raise ValueError(
+            #     warning
+            # )
+            return {}
 
     else:
         ext = file_name.split(".")[-1]

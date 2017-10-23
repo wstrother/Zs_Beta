@@ -140,6 +140,15 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
         if self.graphics:
             self.graphics.update()
 
+    def pause_event_method(self, method_name):
+        if method_name not in self.event_handler.paused:
+            self.event_handler.paused.append(method_name)
+
+        else:
+            p = self.event_handler.paused
+            i = p.index(method_name)
+            self.event_handler.paused = p[0:i] + p[i+1:]
+
 
 class Layer(Entity):
     """
@@ -156,6 +165,7 @@ class Layer(Entity):
         self.groups = []
         self.controllers = []
         self.parent_layer = None
+        self.paused = False
 
         self.update_methods += [
             self.update_controllers,
@@ -345,5 +355,3 @@ CLASS_DICT = {
         "Environment": Environment,
         "Sprite": Sprite
     }
-
-# ===================================

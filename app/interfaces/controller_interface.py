@@ -27,7 +27,11 @@ class ControllerInterface(ApplicationInterface):
 
         if dpad.check():
             dx, dy = dpad.get_direction()
-            block.move_pointer(dx, dy)
+            movement = {
+                'name': 'move_pointer',
+                'value': [dx, dy]
+            }
+            block.handle_event(movement)
 
     @staticmethod
     def check_activation(block):
@@ -36,7 +40,7 @@ class ControllerInterface(ApplicationInterface):
             ]
 
         if any([b.check() for b in buttons]):
-            block.handle_activation(block.members.active_member)
+            block.members.active_member.handle_event("activate")
 
     @staticmethod
     def move(sprite, speed):
@@ -46,7 +50,12 @@ class ControllerInterface(ApplicationInterface):
 
         if dpad.held:
             dx, dy = dpad.get_direction()
-            sprite.move(dx, dy, speed)
+            movement = {
+                'name': 'move',
+                'value': [dx, dy],
+                'speed': speed
+            }
+            sprite.handle_event(movement)
 
     @staticmethod
     def cycle_animation(sprite, button):
@@ -55,9 +64,4 @@ class ControllerInterface(ApplicationInterface):
         )
 
         if b.check():
-            names = sprite.get_animation_states()
-            current = sprite.animation_state
-            i = names.index(current)
-            i += 1
-            i %= len(names)
-            sprite.set_animation_state(names[i])
+            sprite.handle_event('cycle_animation')

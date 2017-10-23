@@ -5,7 +5,8 @@ class HudSprite(TextSprite):
     def __init__(self, name):
         super(HudSprite, self).__init__(name)
 
-        self.hud_field = None
+        self.hud_field = [self, "name"]
+        self.set_text(self.name)
 
         self.update_methods += [
             self.update_text

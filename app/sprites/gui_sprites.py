@@ -12,7 +12,7 @@ DEFAULT_STYLE = {
     "text_newline": False,
     "border_size": (5, 5),
     "buffers": (5, 5),
-    "aligns": ("r", "b")
+    "aligns": ("c", "t")
 }
 
 
@@ -29,6 +29,20 @@ class GuiSprite(Sprite):
     def style(self, value):
         self._style.update(value)
 
+    def set_size(self, w, h):
+        super(GuiSprite, self).set_size(w, h)
+        self.queue_event({
+            "name": "change_size",
+            "size": [w, h]
+        })
+
+    def set_position(self, x, y):
+        super(GuiSprite, self).set_position(x, y)
+        self.queue_event({
+            "name": "change_position",
+            "position": [x, y]
+        })
+
 
 class BlockSprite(GuiSprite):
     def __init__(self, name):
@@ -37,58 +51,81 @@ class BlockSprite(GuiSprite):
             "members", "group", "size", "position"
         ]
         self.members = MemberTable()
+        self.members.select_function = self.selectable
         self.graphics = RectGraphics(self)
+
         self.last = None
+        self.pointer_paused = False
 
         self.update_methods += [
             self.update_pointer
         ]
 
+    @staticmethod
+    def selectable(option):
+        return bool(getattr(
+            option, "on_select", False
+        ))
+
     def update_pointer(self):
-        ControllerInterface.move_pointer(self)
+        if not self.pointer_paused:
+            ControllerInterface.move_pointer(self)
+
         ControllerInterface.check_activation(self)
         self.last = self.members.active_member
 
+        if self.members.member_list:
+            if not self.selectable(
+                    self.members.active_member
+            ):
+                self.move_pointer(1, 1)
+
     def move_pointer(self, x, y):
-        self.members.move_pointer(x, y)
+        if self.members.member_list:
+            self.members.move_pointer(x, y)
 
-        active = self.members.active_member
-        last = self.last
+            active = self.members.active_member
+            last = self.last
 
-        if last != active:
-            self.handle_select(active)
-            if last:
-                self.handle_deselect(last)
+            if last != active:
+                active.handle_event("select")
 
-    @staticmethod
-    def handle_select(sprite):
-        sprite.queue_event("select")
-
-    @staticmethod
-    def handle_deselect(sprite):
-        sprite.queue_event("deselect")
-
-    @staticmethod
-    def handle_activation(sprite):
-        sprite.queue_event("activate")
+                if last:
+                    last.handle_event("deselect")
 
     def set_members(self, table):
-        new_table = []
-        for key in sorted(table.keys()):
-            new_row = []
+        self.members.table = table
+        for sprite in self.members.member_list:
+            self.set_member_listeners(sprite)
 
-            for item in table[key]:
-                new_row.append(item)
-
-            new_table.append(new_row)
-
-        self.members.table = self.get_sprites_from_table(new_table)
         self.set_size(*self.size)
         self.set_table_positions()
 
+    def set_member_listeners(self, sprite):
+        sprite.add_listener({
+            'name': 'change_size',
+            'response': {'name': 'change_member_size', 'member': sprite},
+            'target': self
+        })
+        sprite.add_listener({
+            'name': 'select',
+            'response': {'name': 'option_selected', 'option': sprite},
+            'target': self
+        })
+        sprite.add_listener({
+            'name': 'deselect',
+            'response': {'name': 'option_deselected', 'option': sprite},
+            'target': self
+        })
+        sprite.add_listener({
+            'name': 'activate',
+            'response': {'name': 'option_activated', 'option': sprite},
+            'target': self
+        })
+
     def set_table_positions(self):
         style = self.style
-        self.members.set_member_position(
+        self.members.set_member_positions(
             self.position, self.size,
             style["border_size"],
             style["buffers"],
@@ -153,8 +190,28 @@ class BlockSprite(GuiSprite):
 
         return new_table
 
+    def move(self, dx, dy, v=1):
+        super(BlockSprite, self).move(dx, dy, v=v)
+
+        for sprite in self.members.member_list:
+            sprite.move(dx, dy, v=v)
+
     def on_spawn(self):
-        self.handle_select(self.members.active_member)
+        if self.members.active_member:
+            self.members.active_member.handle_event("select")
+
+    def on_change_member_size(self):
+        self.set_table_positions()
+
+    def on_pause_pointer(self):
+        self.pointer_paused = not self.pointer_paused
+
+    def on_move_pointer(self):
+        event = self.event
+        x, y = event["value"]
+        self.move_pointer(x, y)
+
+    # def on_
 
 
 class TextSprite(GuiSprite):
@@ -169,6 +226,10 @@ class TextSprite(GuiSprite):
         self.set_size(
             *self.graphics.get_image().get_size()
         )
+        self.queue_event({
+            'name': 'change_text',
+            'text': text
+        })
 
     def on_select(self):
         self.style = {"font_color": (0, 255, 0)}
@@ -177,6 +238,3 @@ class TextSprite(GuiSprite):
     def on_deselect(self):
         self.style = {"font_color": (255, 255, 255)}
         self.set_text(self.text)
-
-    def on_activate(self):
-        print(self.text)
