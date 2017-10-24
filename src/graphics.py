@@ -49,6 +49,10 @@ class ImageGraphics(Graphics):
             )
 
     @staticmethod
+    def flip_image(image, x_bool, y_bool):
+        return transform.flip(image, x_bool, y_bool)
+
+    @staticmethod
     def make_sub_image(image, position, size):
         # PYGAME CHOKE POINT
         return image.subsurface(Rect(position, size))
@@ -65,6 +69,9 @@ class ImageGraphics(Graphics):
 class AnimationGraphics(ImageGraphics):
     def __init__(self, entity, file_name, animations):
         super(AnimationGraphics, self).__init__(entity, file_name)
+        self.mirror_image = ImageGraphics.flip_image(
+            self.image, True, False
+        )
         self.animations = animations
         self.animation_state = ""
         self.animation_meter = Meter(
@@ -80,11 +87,15 @@ class AnimationGraphics(ImageGraphics):
         sets = {}
 
         for a in animations.values():
+            img = self.image
+            if a.mirror:
+                img = self.mirror_image
+
             sets[a.name] = [
                 self.make_sub_image(
-                    self.image,
+                    img,
                     a.get_cell_position(i),
-                    a.cell_size
+                    a.get_cell_size(i)
                 ) for i in range(a.length)
             ]
 
@@ -119,13 +130,13 @@ class AnimationGraphics(ImageGraphics):
         self.animation_meter.next()
 
     @staticmethod
-    def load_from_cfg(entity, cfg):
-        image = cfg["info"]["sprite_sheet"]
+    def load_from_cfg(entity, d):
+        image = d["info"]["sprite_sheet"]
 
         animations = {}
-        for name in cfg:
+        for name in d:
             if name != "info":
-                animations[name] = Animation(name, cfg)
+                animations[name] = Animation.get_from_cfg(name, d)
 
         gfx = AnimationGraphics(
             entity, image, animations
@@ -137,19 +148,72 @@ class AnimationGraphics(ImageGraphics):
 class Animation:
     def __init__(self, name, d):
         self.name = name
-        self.frames = list(d[name].values())
-
-        self.frame_rate = d["info"]["frame_rate"]
-        self.cell_size = d["info"]["size"]
+        self.frames = d["frames"]
+        self.frame_rate = d["frame_rate"]
         self.length = len(self.frames)
+        self.mirror = d.get("mirror", False)
+        self.src_size = d["src_size"]
 
     def get_cell_position(self, i):
-        x, y = self.frames[i]
-        w, h = self.cell_size
-        x *= w
-        y *= h
+        frame = self.frames[i]
+        x, y = frame["position"]
+        if self.mirror:
+            w, h = frame["size"]
+            sx, sy = self.src_size
+            x = sx - (x + w)
 
-        return x, y
+        return [x, y]
+
+    def get_cell_size(self, i):
+        frame = self.frames[i]
+        return frame["size"]
+
+    @staticmethod
+    def get_from_cfg(name, cfg):
+        entry = cfg[name]
+        info = cfg["info"]
+
+        if "frame_rate" not in entry:
+            entry["frame_rate"] = info["frame_rate"]
+
+        if "src_size" not in entry:
+            sprite_sheet = load_resource(info["sprite_sheet"])
+            entry["src_size"] = list(sprite_sheet.get_size())
+
+        if "frames" not in entry:
+            frames = []
+            for i in sorted(entry.keys()):
+                try:
+                    int(i)
+
+                    frame = entry[i]
+                    if type(frame) is dict:
+                        frames.append(frame)
+                    else:
+                        cell_size = cfg["info"]["cell_size"]
+                        frames.append(
+                            Animation.get_frame_data(entry[i], cell_size)
+                        )
+                except ValueError:
+                    pass
+
+            entry["frames"] = frames
+
+        else:
+            if type(entry["frames"]) is str:
+                entry["frames"] = load_resource(entry["frames"], section="frames")
+
+        return Animation(name, entry)
+
+    @staticmethod
+    def get_frame_data(frame, cell_size):
+        x, y = frame
+        cw, ch = cell_size
+
+        x *= cw
+        y *= ch
+
+        return {"size": list(cell_size), "position": [x, y]}
 
 
 class TextGraphics(Graphics):
