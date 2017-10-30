@@ -88,6 +88,9 @@ def load_resource(file_name, section=None):
     return get_object(ext, path)
 
 
+LOADED_IMAGES = {}
+
+
 def get_object(ext, path):
     """
     Contextually initializes an object for a given resource based on
@@ -100,7 +103,14 @@ def get_object(ext, path):
         return load_json(path)
 
     if ext in Res.IMAGE_EXT:
-        return pygame.image.load(path)              # PYGAME CHOKE POINT
+        if path in LOADED_IMAGES:
+            return LOADED_IMAGES[path]
+
+        else:
+            image = pygame.image.load(path)            # PYGAME CHOKE POINT
+            LOADED_IMAGES[path] = image
+
+            return image
 
     # if ext in Res.SOUND_EXT:
     #     return pygame.mixer.Sound(path)             # PYGAME CHOKE POINT
@@ -113,10 +123,19 @@ def get_object(ext, path):
         return text
 
 
+LOADED_FONTS = {}
+
+
 def get_font(name, size, bold, italic):
+    h_key = hash((name, size, bold, italic))
     # PYGAME CHOKE POINT
 
-    path = pygame.font.match_font(name, bold, italic)
-    font = pygame.font.Font(path, size)
+    if h_key in LOADED_FONTS:
+        return LOADED_FONTS[h_key]
 
-    return font
+    else:
+        path = pygame.font.match_font(name, bold, italic)
+        font = pygame.font.Font(path, size)
+        LOADED_FONTS[h_key] = font
+
+        return font

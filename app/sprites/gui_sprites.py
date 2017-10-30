@@ -1,6 +1,6 @@
 from src.entities import Sprite
 from src.flex import MemberTable
-from src.graphics import TextGraphics, RectGraphics
+from src.graphics import TextGraphics, ContainerGraphics
 from app.interfaces.controller_interface import ControllerInterface
 
 DEFAULT_STYLE = {
@@ -12,7 +12,15 @@ DEFAULT_STYLE = {
     "text_newline": False,
     "border_size": (5, 5),
     "buffers": (5, 5),
-    "aligns": ("c", "t")
+    "aligns": ("c", "t"),
+    "bg_color": (0, 0, 255),
+    "bg_image": "bg.png",
+    "border": True,
+    "bold": True,
+    "border_images": ("h_side.png", "v_side.png", "corner.png"),
+    "border_sides": "tlrb",
+    "border_corners": "abcd",
+    "alpha_color": (255, 0, 0)
 }
 
 
@@ -30,18 +38,26 @@ class GuiSprite(Sprite):
         self._style.update(value)
 
     def set_size(self, w, h):
+        old = self.size
         super(GuiSprite, self).set_size(w, h)
-        self.queue_event({
-            "name": "change_size",
-            "size": [w, h]
-        })
+        new = self.size
+
+        if old != new:
+            self.handle_event({
+                "name": "change_size",
+                "size": [w, h]
+            })
 
     def set_position(self, x, y):
+        old = self.position
         super(GuiSprite, self).set_position(x, y)
-        self.queue_event({
-            "name": "change_position",
-            "position": [x, y]
-        })
+        new = self.position
+
+        if old != new:
+            self.handle_event({
+                "name": "change_position",
+                "position": [x, y]
+            })
 
 
 class BlockSprite(GuiSprite):
@@ -52,7 +68,8 @@ class BlockSprite(GuiSprite):
         ]
         self.members = MemberTable()
         self.members.select_function = self.selectable
-        self.graphics = RectGraphics(self)
+
+        self.graphics = ContainerGraphics(self)
 
         self.last = None
         self.pointer_paused = False
@@ -124,14 +141,18 @@ class BlockSprite(GuiSprite):
         })
 
     def set_table_positions(self):
+        border_size = 0, 0
         style = self.style
+        if "border" in style:
+            border_size = self.graphics.border_size
+
+        buffers = style.get("buffers", (0, 0))
+        aligns = style.get("aligns", None)
+
         self.members.set_member_positions(
             self.position, self.size,
-            style["border_size"],
-            style["buffers"],
-            style["aligns"]
+            border_size, buffers, aligns
         )
-        self.reset_image()
 
     def get_members(self):
         return self.members.member_list
@@ -153,24 +174,13 @@ class BlockSprite(GuiSprite):
         for sprite in self.get_members():
             sprite.set_group(group)
 
-    def set_position(self, x, y):
-        super(BlockSprite, self).set_position(x, y)
-
-        self.set_table_positions()
-
     def set_size(self, w, h):
-        super(BlockSprite, self).set_size(w, h)
-
         style = self.style
-        self.size = self.members.adjust_size(
+        w, h = self.members.adjust_size(
             self.size, style["border_size"],
             style["buffers"]
         )
-        self.set_table_positions()
-        self.reset_image()
-
-    def reset_image(self):
-        self.graphics.image = self.graphics.make_image()
+        super(BlockSprite, self).set_size(w, h)
 
     @staticmethod
     def get_sprites_from_table(table):
@@ -197,10 +207,20 @@ class BlockSprite(GuiSprite):
             sprite.move(dx, dy, v=v)
 
     def on_spawn(self):
+        super(BlockSprite, self).on_spawn()
+
         if self.members.active_member:
             self.members.active_member.handle_event("select")
 
+    def on_change_position(self):
+        self.set_table_positions()
+
+    def on_change_size(self):
+        self.set_table_positions()
+        self.graphics.reset_image()
+
     def on_change_member_size(self):
+        self.set_size(*self.size)
         self.set_table_positions()
 
     def on_pause_pointer(self):
@@ -211,25 +231,29 @@ class BlockSprite(GuiSprite):
         x, y = event["value"]
         self.move_pointer(x, y)
 
-    # def on_
-
 
 class TextSprite(GuiSprite):
     def __init__(self, name):
         super(TextSprite, self).__init__(name)
-        self.graphics = TextGraphics(self, "")
+        self.graphics = TextGraphics(self)
         self.text = ""
+
+    def get_text(self):
+        text = self.text
+        if not text:
+            text = self.name
+
+        return text
 
     def set_text(self, text):
         self.text = text
-        self.graphics.set_text(text)
-        self.set_size(
-            *self.graphics.get_image().get_size()
-        )
-        self.queue_event({
+        self.handle_event({
             'name': 'change_text',
             'text': text
         })
+
+    def on_change_text(self):
+        self.graphics.reset_image()
 
     def on_select(self):
         self.style = {"font_color": (0, 255, 0)}

@@ -47,6 +47,7 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
         self.position = 0, 0
         self.init_order = []
 
+        self.spawned = False
         self.visible = True
         self.graphics = None
         self.clock = Clock("{}'s clock".format(name))
@@ -148,6 +149,12 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
             p = self.event_handler.paused
             i = p.index(method_name)
             self.event_handler.paused = p[0:i] + p[i+1:]
+
+    def on_spawn(self):
+        print("{} spawned".format(self))
+        self.spawned = True
+        if self.graphics:
+            self.graphics.reset_image()
 
 
 class Layer(Entity):

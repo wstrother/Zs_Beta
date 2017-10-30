@@ -116,7 +116,12 @@ class MemberTable:
         if self.member_list:
             parent_x, parent_y = position
             w, h = size
-            align_h, align_v = aligns
+
+            if aligns:
+                align_h, align_v = aligns
+            else:
+                align_h, align_v = "c", "c"
+
             border_w, border_h = border_size
             buff_w, buff_h = buffers
 
@@ -147,11 +152,14 @@ class MemberTable:
                             x += {
                                 "l": x_disp,
                                 "c": (j * cell_w) + ((cell_w - item_w) / 2),
-                                "r": r_offset + x_disp}[align_h]
+                                "r": r_offset + x_disp
+                            }[align_h]
+
                             y += {
                                 "t": y_disp,
                                 "c": (i * cell_h) + ((cell_h - item_h) / 2),
-                                "b": b_edge + y_disp}[align_v]
+                                "b": b_edge + y_disp
+                            }[align_v]
 
                             item.position = parent_x + x, parent_y + y
 
