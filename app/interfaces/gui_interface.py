@@ -12,36 +12,8 @@ class GuiInterface(ApplicationInterface):
             context, environment, GuiInterface.INTERFACE_NAME
         )
 
-    def handle_entity(self, method_name, entity, *args):
-        if not hasattr(self, method_name):
-            i = int(method_name)
-            method_name = "set_option"
-            option = entity.get_option(i)
-            entity = option
-
-        self.get_interface_method(
-            method_name, entity, *args
-        )()
-
     def get_menu_from_entity(self, block, entity):
         self.set_menu(block, entity.get_menu())
-
-    def set_menu(self, block, table):
-        new_table = []
-        for row in table:
-            new_row = []
-            for item in row:
-                if item:
-                    new_row.append(self.get_option(
-                        block, item
-                    ))
-                else:
-                    new_row.append(None)
-            new_table.append(new_row)
-
-        block.set_members(new_table)
-        block.set_group(self.get_value_from_model(block.group))
-        block.set_table_positions()
 
     def get_menu_from_directory(self, block, *path):
         path = join(*path)
@@ -61,6 +33,23 @@ class GuiInterface(ApplicationInterface):
             table.append(row)
 
         self.set_menu(block, table)
+
+    def add_return_option(self, block):
+        option = self.get_option(
+            block, {
+                "name": "Return Option",
+                "text": "Exit",
+                "on_activate": ["handle_event", block, "return"]
+            }
+        )
+
+        new_table = [[option]]
+        block.add_members(new_table)
+        block.add_listener({
+            "name": "return",
+            "target": self.environment,
+            "response": "return"
+        })
 
     def get_option(self, block, d):
         name = d.pop("name")
@@ -95,6 +84,26 @@ class GuiInterface(ApplicationInterface):
         )
 
         return option
+
+    def set_menu(self, block, table):
+        new_table = []
+        for row in table:
+
+            new_row = []
+            for item in row:
+
+                if item:
+                    new_row.append(
+                        self.get_option(
+                            block, item
+                        )
+                    )
+                else:
+                    new_row.append(None)
+
+            new_table.append(new_row)
+
+        block.set_members(new_table)
 
     def set_activate_method(self, option, method_name, target, *args):
         m = None

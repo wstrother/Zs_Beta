@@ -155,7 +155,6 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
             self.event_handler.paused = p[0:i] + p[i+1:]
 
     def on_spawn(self):
-        print("{} spawned".format(self))
         self.spawned = True
         if self.graphics:
             self.graphics.reset_image()
@@ -289,7 +288,7 @@ class Environment(Layer):
         super(Environment, self).__init__(name)
 
         self.model = {}
-        self.transition = False
+        self.transition = {}
         self.return_to = None
 
     def get_groups(self):
@@ -339,7 +338,7 @@ class Environment(Layer):
         path = join(*Dirs.ENVIRONMENTS + (file_name,))
         save_cfg(self.get_state_as_cfg(), path, p=p)
 
-    def transition_to(self, environment):
+    def transition_to(self, environment, **kwargs):
         if type(environment) is Environment:
             transition = environment
         elif environment in self.model:
@@ -350,30 +349,18 @@ class Environment(Layer):
         self.transition = {
             "environment": transition
         }
-
-    # @staticmethod
-    # def make_from_cfg(name, class_dict=None):
-    #     if class_dict:
-    #         CLASS_DICT.update(class_dict)
-    #     cd = CLASS_DICT.copy()
-    #
-    #     env = Environment(name)
-    #     cfg = load_resource(name + ".cfg")
-    #
-    #     set_environment_context(env, cd, cfg)
-    #
-    #     return env
-    #
-    # def apply_context_interface(self, class_dict, interface):
-    #     interface(class_dict, self).apply_interface(
-    #         load_resource(
-    #             self.name, section=interface.INTERFACE_NAME
-    #         )
-    #     )
+        self.transition.update(kwargs)
 
     def main(self, screen):
         self.draw(screen)
         self.update()
+
+    def on_return(self):
+        if self.return_to:
+            env = self.return_to
+            self.transition_to(env, to_parent=True)
+        else:
+            self.transition = "exit"
 
 
 class Sprite(Entity):
@@ -389,7 +376,7 @@ class Sprite(Entity):
         self.controller = None
 
     def set_group(self, group):
-        self.group = group.name
+        self.group = group
         group.add_member(self)
 
     def set_controller(self, layer, index):

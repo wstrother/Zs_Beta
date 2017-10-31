@@ -92,10 +92,13 @@ class BlockSprite(GuiSprite):
         self.last = self.members.active_member
 
         if self.members.member_list:
-            if not self.selectable(
-                    self.members.active_member
-            ):
+            active = self.members.active_member
+
+            if not self.selectable(active):
                 self.move_pointer(1, 1)
+
+            if not active.selected:
+                active.handle_event("select")
 
     def move_pointer(self, x, y):
         if self.members.member_list:
@@ -112,33 +115,39 @@ class BlockSprite(GuiSprite):
 
     def set_members(self, table):
         self.members.table = table
-        for sprite in self.members.member_list:
-            self.set_member_listeners(sprite)
+        self.handle_event("change_member_table")
 
-        self.set_size(*self.size)
-        self.set_table_positions()
+    def add_members(self, table):
+        self.members.table += table
+        self.handle_event("change_member_table")
 
     def set_member_listeners(self, sprite):
-        sprite.add_listener({
-            'name': 'change_size',
-            'response': {'name': 'change_member_size', 'member': sprite},
-            'target': self
-        })
-        sprite.add_listener({
-            'name': 'select',
-            'response': {'name': 'option_selected', 'option': sprite},
-            'target': self
-        })
-        sprite.add_listener({
-            'name': 'deselect',
-            'response': {'name': 'option_deselected', 'option': sprite},
-            'target': self
-        })
-        sprite.add_listener({
-            'name': 'activate',
-            'response': {'name': 'option_activated', 'option': sprite},
-            'target': self
-        })
+        listeners = [
+            {
+                'name': 'change_size',
+                'response': {'name': 'change_member_size', 'member': sprite},
+                'target': self
+            },
+            {
+                'name': 'select',
+                'response': {'name': 'option_selected', 'option': sprite},
+                'target': self
+            },
+            {
+                'name': 'deselect',
+                'response': {'name': 'option_deselected', 'option': sprite},
+                'target': self
+            },
+            {
+                'name': 'activate',
+                'response': {'name': 'option_activated', 'option': sprite},
+                'target': self
+            }
+        ]
+        for l in listeners:
+            sprite.remove_listener(l)
+            sprite.add_listener(l)
+            print(sprite, len(sprite.event_handler.listeners))
 
     def set_table_positions(self):
         border_size = 0, 0
@@ -219,6 +228,16 @@ class BlockSprite(GuiSprite):
         self.set_table_positions()
         self.graphics.reset_image()
 
+    def on_change_member_table(self):
+        for item in self.members.member_list:
+            if item.group != self.group:
+                item.set_group(self.group)
+
+        for sprite in self.members.member_list:
+            self.set_member_listeners(sprite)
+
+        self.handle_event("change_member_size")
+
     def on_change_member_size(self):
         self.set_size(*self.size)
         self.set_table_positions()
@@ -237,6 +256,7 @@ class TextSprite(GuiSprite):
         super(TextSprite, self).__init__(name)
         self.graphics = TextGraphics(self)
         self.text = ""
+        self.selected = False
 
     def get_text(self):
         text = self.text
@@ -256,9 +276,11 @@ class TextSprite(GuiSprite):
         self.graphics.reset_image()
 
     def on_select(self):
+        self.selected = True
         self.style = {"font_color": (0, 255, 0)}
         self.set_text(self.text)
 
     def on_deselect(self):
+        self.selected = False
         self.style = {"font_color": (255, 255, 255)}
         self.set_text(self.text)

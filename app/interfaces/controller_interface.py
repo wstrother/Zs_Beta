@@ -40,7 +40,7 @@ class ControllerInterface(ApplicationInterface):
             ]
 
         if any([b.check() for b in buttons]):
-            block.members.active_member.handle_event("activate")
+            block.members.active_member.queue_event("activate")
 
     @staticmethod
     def move(sprite, speed):
@@ -55,7 +55,7 @@ class ControllerInterface(ApplicationInterface):
                 'value': [dx, dy],
                 'speed': speed
             }
-            sprite.handle_event(movement)
+            sprite.queue_event(movement)
 
     @staticmethod
     def cycle_animation(sprite, button):
@@ -64,4 +64,4 @@ class ControllerInterface(ApplicationInterface):
         )
 
         if b.check():
-            sprite.handle_event('cycle_animation')
+            sprite.queue_event('cycle_animation')

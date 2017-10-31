@@ -5,7 +5,7 @@ class HudSprite(TextSprite):
     def __init__(self, name):
         super(HudSprite, self).__init__(name)
 
-        self.hud_field = [self, "name"]
+        self.hud_field = []
         self.set_text(self.name)
 
         self.update_methods += [
@@ -16,7 +16,8 @@ class HudSprite(TextSprite):
         self.hud_field = target, attribute, default
 
     def update_text(self):
-        text = getattr(*self.hud_field)
+        if self.hud_field:
+            text = getattr(*self.hud_field)
 
-        if self.text != text:
-            self.set_text(text)
+            if self.text != text:
+                self.set_text(text)

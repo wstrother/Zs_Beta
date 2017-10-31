@@ -59,6 +59,9 @@ class Game:
         self.environment.main(self.screen)
 
         if self.environment.transition:
+            if self.environment.transition == "exit":
+                exit()
+
             old = self.environment
             t = old.transition
 
@@ -66,8 +69,10 @@ class Game:
                 t["environment"]
             )
 
-            if t.get("to_child", False):
+            if not t.get("to_parent", False):
                 self.environment.return_to = old
+                old.transition = {}
+                print(old)
 
     def set_environment(self, env):
         if not type(env) is Environment:

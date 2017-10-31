@@ -247,7 +247,9 @@ class ApplicationInterface:
                 self.handle_entity(method_name, entity, *args)
 
     def handle_entity(self, method_name, entity, *args):
-        pass
+        self.get_interface_method(
+            method_name, entity, *args
+        )()
 
     def get_value_from_model(self, value):
         if type(value) is tuple:
