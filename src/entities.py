@@ -4,10 +4,9 @@ from src.cfg import save_cfg, format_dict
 from src.collections import Group
 from src.events import EventHandlerInterface
 from src.meters import Clock
+from src.geometry import Rect
 from src.controller_io import ControllerIO
-from src.context import set_environment_context
-from src.resources import load_resource
-from zs_globals import Cfg, Zs
+from zs_globals import Cfg, Zs, Settings
 from zs_globals import Resources as Dirs
 
 
@@ -50,7 +49,10 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
         self.spawned = False
         self.visible = True
         self.graphics = None
+
         self.clock = Clock("{}'s clock".format(name))
+        self.rect = Rect(self.size, self.position)
+
         self.update_methods = [
             self.clock.tick,
             self.update_graphics
@@ -129,9 +131,11 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
 
     def set_size(self, w, h):
         self.size = w, h
+        self.rect.size = w, h
 
     def set_position(self, x, y):
         self.position = x, y
+        self.rect.position = x, y
 
     def update(self):
         for m in self.update_methods:
@@ -167,6 +171,7 @@ class Layer(Entity):
     """
     def __init__(self, name):
         super(Layer, self).__init__(name)
+        self.set_size(*Settings.SCREEN_SIZE)
 
         self.sub_layers = []
         self.groups = []
@@ -226,13 +231,33 @@ class Layer(Entity):
         for layer in self.sub_layers:
             layer.update()
 
+    def get_canvas(self, screen):
+        # PYGAME CHOKE POINT
+
+        sub_rect = self.rect.clip(
+            screen.get_rect())
+
+        try:
+            canvas = screen.subsurface(sub_rect)
+        except ValueError:  # if the layer's area is entirely outside of the screen's
+            return None     # area, it doesn't get drawn
+
+        return canvas
+
     def draw(self, screen, offset=(0, 0), draw_point=(0, 0)):
+        canvas = self.get_canvas(screen)
+
         if self.graphics and self.visible:
-            screen.blit(
+            canvas.blit(
                 self.graphics.get_image(), draw_point)
 
         self.draw_items(
-            screen, offset=offset)
+            canvas, offset=offset
+        )
+
+        self.draw_sub_layers(
+            canvas, offset=offset
+        )
 
     def draw_items(self, canvas, offset=(0, 0)):
         ox, oy = offset
@@ -247,6 +272,10 @@ class Layer(Entity):
 
                     canvas.blit(item.image, (x, y))
 
+    def draw_sub_layers(self, canvas, offset=(0, 0)):
+        for layer in self.sub_layers:
+            layer.draw(canvas, offset=offset)
+
 
 class Environment(Layer):
     """
@@ -255,10 +284,13 @@ class Environment(Layer):
       which allows shared reference to environment data
       including layers, sprite groups, and other generic data.
     """
+
     def __init__(self, name):
         super(Environment, self).__init__(name)
 
         self.model = {}
+        self.transition = False
+        self.return_to = None
 
     def get_groups(self):
         model = self.model
@@ -307,30 +339,40 @@ class Environment(Layer):
         path = join(*Dirs.ENVIRONMENTS + (file_name,))
         save_cfg(self.get_state_as_cfg(), path, p=p)
 
-    @staticmethod
-    def make_from_cfg(name, class_dict=None):
-        cd = CLASS_DICT.copy()
-        if class_dict:
-            cd.update(class_dict)
+    def transition_to(self, environment):
+        if type(environment) is Environment:
+            transition = environment
+        elif environment in self.model:
+            transition = self.model[environment]
+        else:
+            transition = environment
 
-        env = Environment(name)
-        cfg = load_resource(name + ".cfg")
+        self.transition = {
+            "environment": transition
+        }
 
-        set_environment_context(env, cd, cfg)
-
-        return env
-
-    def apply_context_interface(self, class_dict, interface):
-        interface(class_dict, self).apply_interface(
-            load_resource(
-                self.name, section=interface.INTERFACE_NAME
-            )
-        )
+    # @staticmethod
+    # def make_from_cfg(name, class_dict=None):
+    #     if class_dict:
+    #         CLASS_DICT.update(class_dict)
+    #     cd = CLASS_DICT.copy()
+    #
+    #     env = Environment(name)
+    #     cfg = load_resource(name + ".cfg")
+    #
+    #     set_environment_context(env, cd, cfg)
+    #
+    #     return env
+    #
+    # def apply_context_interface(self, class_dict, interface):
+    #     interface(class_dict, self).apply_interface(
+    #         load_resource(
+    #             self.name, section=interface.INTERFACE_NAME
+    #         )
+    #     )
 
     def main(self, screen):
-        for layer in self.sub_layers:
-            layer.draw(screen)
-
+        self.draw(screen)
         self.update()
 
 
@@ -353,12 +395,3 @@ class Sprite(Entity):
     def set_controller(self, layer, index):
         self.controller = layer.controllers[index]
 
-# ===================================
-# DEFINE THE DEFAULT CLASS DICTIONARY
-# ===================================
-
-CLASS_DICT = {
-        "Layer": Layer,
-        "Environment": Environment,
-        "Sprite": Sprite
-    }

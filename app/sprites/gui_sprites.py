@@ -8,7 +8,7 @@ DEFAULT_STYLE = {
     "font_size": 15,
     "font_color": (255, 255, 255),
     "text_buffer": 5,
-    "text_cutoff": 20,
+    "text_cutoff": 100,
     "text_newline": False,
     "border_size": (5, 5),
     "buffers": (5, 5),

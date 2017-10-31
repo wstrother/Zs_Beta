@@ -1,14 +1,15 @@
-from app.interface import ApplicationInterface
+from src.context import ApplicationInterface
 from app.sprites.hud_sprite import HudSprite
-from src.context import init_item
+from os import listdir
+from os.path import join
 
 
 class GuiInterface(ApplicationInterface):
     INTERFACE_NAME = "gui interface"
 
-    def __init__(self, class_dict, environment):
+    def __init__(self, context, environment):
         super(GuiInterface, self).__init__(
-            class_dict, environment, GuiInterface.INTERFACE_NAME
+            context, environment, GuiInterface.INTERFACE_NAME
         )
 
     def handle_entity(self, method_name, entity, *args):
@@ -23,13 +24,16 @@ class GuiInterface(ApplicationInterface):
         )()
 
     def get_menu_from_entity(self, block, entity):
+        self.set_menu(block, entity.get_menu())
+
+    def set_menu(self, block, table):
         new_table = []
-        for row in entity.get_menu():
+        for row in table:
             new_row = []
             for item in row:
                 if item:
                     new_row.append(self.get_option(
-                        block, entity, item
+                        block, item
                     ))
                 else:
                     new_row.append(None)
@@ -39,7 +43,26 @@ class GuiInterface(ApplicationInterface):
         block.set_group(self.get_value_from_model(block.group))
         block.set_table_positions()
 
-    def get_option(self, block, entity, d):
+    def get_menu_from_directory(self, block, *path):
+        path = join(*path)
+        files = listdir(path)
+
+        names = (self.environment.name, self.environment.name + ".cfg")
+        file_names = [f for f in files if f not in names]
+
+        table = []
+        for file_name in file_names:
+            row = [
+                {
+                    "name": "Load {}".format(file_name),
+                    "on_activate": ["transition_to", "environment", file_name]
+                }
+            ]
+            table.append(row)
+
+        self.set_menu(block, table)
+
+    def get_option(self, block, d):
         name = d.pop("name")
         option = HudSprite(name)
 
@@ -51,9 +74,11 @@ class GuiInterface(ApplicationInterface):
             option.on_select = False
 
         if "on_activate" in d:
-            args = d.pop("on_activate")
+            args = self.get_value_from_model(
+                d.pop("on_activate")
+            )
             self.set_activate_method(
-                entity, option, *args
+                option, *args
             )
 
         if "listeners" in d:
@@ -65,19 +90,18 @@ class GuiInterface(ApplicationInterface):
 
             option.add_listener(*listeners)
 
-        init_item(
-            self.class_dict, self.environment.model,
-            option, d
+        self.context.init_item(
+            self.environment.model, option, d
         )
 
         return option
 
-    def set_activate_method(self, entity, option, method_name, *args):
+    def set_activate_method(self, option, method_name, target, *args):
         m = None
         if hasattr(self, method_name):
             m = getattr(self, method_name)
-        elif hasattr(entity, method_name):
-            m = getattr(entity, method_name)
+        elif hasattr(target, method_name):
+            m = getattr(target, method_name)
 
         if callable(m):
             def on_activate():
@@ -87,12 +111,4 @@ class GuiInterface(ApplicationInterface):
         elif m is not None:
             raise ValueError("{} is not callable".format(m))
 
-    @staticmethod
-    def cycle_animation(sprite):
-        names = sprite.get_animation_states()
-        current = sprite.animation_state
-        i = names.index(current)
-        i += 1
-        i %= len(names)
-        sprite.set_animation_state(names[i])
 

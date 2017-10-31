@@ -188,12 +188,16 @@ class Button(InputDevice):
         self.held_delay = ConIn.HELD_DELAY
         self.held = 0
         self.default = 0
+        self.lifted = False
 
     # ignore / check give a method for getting discrete input intervals from a
     # continuous button push.
     # See zs_constants.py to adjust INIT_DELAY and HELD_DELAY values
     @property
     def ignore(self):
+        if not self.lifted:
+            return True
+
         ignore = False
         h, i_delay, h_delay = (self.held,
                                self.init_delay,
@@ -226,6 +230,9 @@ class Button(InputDevice):
         return int(mapping.is_pressed())
 
     def update(self):
+        if not self.lifted and not self.get_value():
+            self.lifted = True
+
         if self.get_value():
             self.held += 1
         else:

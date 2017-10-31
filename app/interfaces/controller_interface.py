@@ -1,4 +1,4 @@
-from app.interface import ApplicationInterface
+from src.context import ApplicationInterface
 
 
 class ControllerInterface(ApplicationInterface):

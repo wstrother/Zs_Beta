@@ -64,9 +64,16 @@ class AnimationSprite(Sprite):
         if self.graphics:
             return self.graphics.get_animation_states()
 
-    @staticmethod
-    def toggle_movement(sprite):
-        sprite.pause_event_method('move')
+    def toggle_movement(self):
+        self.pause_event_method('move')
+
+    def cycle_animation(self):
+        names = self.get_animation_states()
+        current = self.animation_state
+        i = names.index(current)
+        i += 1
+        i %= len(names)
+        self.set_animation_state(names[i])
 
     def on_move(self):
         event = self.event

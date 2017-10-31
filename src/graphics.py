@@ -254,7 +254,6 @@ class TextGraphics(Graphics):
         )
         kwargs = dict(cutoff=cutoff, nl=nl)
         h_key = hash(args + (cutoff, nl))
-        print("\n", h_key)
 
         if h_key in Graphics.PRE_RENDERS:
             return Graphics.PRE_RENDERS[h_key]
@@ -299,8 +298,6 @@ class TextGraphics(Graphics):
     @staticmethod
     def make_text_image(text, font, color, buffer,
                         cutoff=0, nl=True):
-        print("MAKE TEXT GRAPHICS IMAGE")
-
         text = TextGraphics.get_text(
             text, cutoff, nl)
 
@@ -377,31 +374,43 @@ class RectGraphics(Graphics):
 
     @staticmethod
     def get_rect_image(size, color, draw_width):
-        # PYGAME CHOKE POINT
+        h_key = hash(("rect", size, color, draw_width))
+        if h_key in Graphics.PRE_RENDERS:
+            return Graphics.PRE_RENDERS[h_key]
 
-        rect = Rect((0, 0), size)
-        image = Surface(
-            size, SRCALPHA, 32)
-        draw.rect(
-            image, color, rect, draw_width)
+        else:
+            # PYGAME CHOKE POINT
 
-        return image
+            rect = Rect((0, 0), size)
+            image = Surface(
+                size, SRCALPHA, 32)
+            draw.rect(
+                image, color, rect, draw_width)
+
+            Graphics.PRE_RENDERS[h_key] = image
+            return image
 
     @staticmethod
     def get_circle_image(radius, color, draw_width):
-        # PYGAME CHOKE POINT
+        h_key = hash(("circle", radius, color, draw_width))
+        if h_key in Graphics.PRE_RENDERS:
+            return Graphics.PRE_RENDERS[h_key]
 
-        size = 2 * radius, 2 * radius
-        position = radius, radius
+        else:
+            # PYGAME CHOKE POINT
 
-        image = Surface(
-            size, SRCALPHA, 32)
+            size = 2 * radius, 2 * radius
+            position = radius, radius
 
-        draw.circle(
-            image, color, position,
-            radius, draw_width)
+            image = Surface(
+                size, SRCALPHA, 32)
 
-        return image
+            draw.circle(
+                image, color, position,
+                radius, draw_width)
+
+            Graphics.PRE_RENDERS[h_key] = image
+            return image
 
 
 class ContainerGraphics(Graphics):
@@ -425,7 +434,6 @@ class ContainerGraphics(Graphics):
         self.border_size = self.corner_image.get_size()
 
     def make_image(self, bg_color=False):
-        print("\nMAKE CONTAINER GRAPHICS")
         entity = self.entity
         size = entity.size
 

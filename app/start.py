@@ -4,8 +4,10 @@ from app.interfaces.gui_interface import GuiInterface
 from app.sprites.animation_sprite import AnimationSprite
 from app.sprites.hud_sprite import HudSprite
 from app.sprites.gui_sprites import BlockSprite, TextSprite
-from game import start
+
+from src.context import Context
 from zs_globals import Settings
+from game import start
 
 class_dict = {cls.__name__: cls for cls in (
     TextSprite,
@@ -14,10 +16,9 @@ class_dict = {cls.__name__: cls for cls in (
     BlockSprite
 )}
 
-game = start(
-    Settings.APP_START,
-    class_dict,
-    ControllerInterface,
-    GuiInterface
+context = Context(class_dict, ControllerInterface, GuiInterface)
+
+start(
+    Settings.APP_START, context
 ).main()
 
