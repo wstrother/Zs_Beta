@@ -47,6 +47,7 @@ class Entity(EventHandlerInterface, metaclass=CfgMetaclass):
         self.init_order = []
 
         self.spawned = False
+        self.paused = False
         self.visible = True
         self.graphics = None
 
@@ -176,7 +177,6 @@ class Layer(Entity):
         self.groups = []
         self.controllers = []
         self.parent_layer = None
-        self.paused = False
 
         self.update_methods += [
             self.update_controllers,
@@ -222,13 +222,16 @@ class Layer(Entity):
             c.update()
 
     def update_sprites(self):
-        for g in self.groups:
-            for sprite in g.sprites:
-                sprite.update()
+        if not self.paused:
+            for g in self.groups:
+                for sprite in g.sprites:
+                    if not sprite.paused:
+                        sprite.update()
 
     def update_sub_layers(self):
-        for layer in self.sub_layers:
-            layer.update()
+        if not self.paused:
+            for layer in self.sub_layers:
+                layer.update()
 
     def get_canvas(self, screen):
         # PYGAME CHOKE POINT
@@ -273,7 +276,8 @@ class Layer(Entity):
 
     def draw_sub_layers(self, canvas, offset=(0, 0)):
         for layer in self.sub_layers:
-            layer.draw(canvas, offset=offset)
+            if layer.visible:
+                layer.draw(canvas, offset=offset)
 
 
 class Environment(Layer):
@@ -360,7 +364,7 @@ class Environment(Layer):
             env = self.return_to
             self.transition_to(env, to_parent=True)
         else:
-            self.transition = "exit"
+            self.transition_to(None, exit=True)
 
 
 class Sprite(Entity):

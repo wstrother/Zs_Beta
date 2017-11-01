@@ -66,6 +66,7 @@ class BlockSprite(GuiSprite):
         self.init_order += [
             "members", "group", "size", "position"
         ]
+
         self.members = MemberTable()
         self.members.select_function = self.selectable
 

@@ -272,3 +272,206 @@ class ApplicationInterface:
             )
 
         return interface_method
+
+
+class NewContext:
+    def __init__(self, class_dict, *interfaces):
+        self.class_dict = CLASS_DICT
+        if class_dict:
+            self.class_dict.update(class_dict)
+
+        self.interfaces = interfaces
+        self.model = {}
+
+    def get_environment(self, name):
+        env = Environment(name)
+        cfg = load_resource(name)
+
+        self.set_environment_context(cfg, env)
+
+        return env
+
+    def get_spawn_method(self, cls):
+        """
+        returns callable method for entity objects
+          from imported modules in class_dict
+        """
+
+        def spawn(name):
+            return self.class_dict[cls](name)
+
+        return spawn
+
+    @staticmethod
+    def log_item(item, name=None):
+        if not name:
+            name = item.name
+
+        print("{} created and added to model[{}]".format(
+            item, name
+        ))
+
+    def get_value(self, value):
+        """
+        looks up corresponding keys to data argument in
+          the imported class_dict and data model
+        """
+        def get(k):
+            if k == Cfg.MODEL:
+                return self.model
+
+            if k in self.class_dict:
+                return self.class_dict[k]
+
+            if k in self.model:
+                return self.model[k]
+
+            else:
+                return k
+
+        if type(value) is list:
+            new = []
+            for item in value:
+                new.append(get(item))
+
+            return new
+
+        elif type(value) is dict:
+            for key in value:
+                if value[key] is True:
+                    value[key] = get(key)
+
+            return value
+
+        else:
+            return get(value)
+
+    def set_environment_context(self, cfg, env, p=False):
+        self.model["environment"] = env
+
+        groups = cfg.pop("groups")
+        self.add_groups(groups, p=p)
+
+        layers = cfg.pop("layers")
+        self.add_entities(layers, layer=True, p=p)
+
+        sprites = cfg.pop("sprites")
+        self.add_entities(sprites, p=p)
+
+        for section in cfg:
+            self.update_model(section, p=False)
+
+    def update_model(self, section, p=False):
+        for name in section:
+            item = self.get_value(name)
+            self.model[name] = item
+
+            if p:
+                self.log_item(item, name=name)
+
+    def add_groups(self, section, p=False):
+        for group_name in section:
+            group = Group(group_name)
+            self.model[group_name] = group
+
+            if p:
+                self.log_item(group)
+
+    def add_entities(self, section, layer=False, p=False):
+        for item_name in section:
+            data = section[item_name]
+
+            item = self.get_spawn_method(
+                data[Cfg.CLASS_KEYWORD]
+            )(item_name)
+            self.model[item_name] = item
+
+            if layer:
+                if Cfg.PARENT_LAYER not in data:
+                    parent = self.model["environment"]
+                    log_cfg = False
+
+                else:
+                    parent = self.model[data[Cfg.PARENT_LAYER]]
+                    log_cfg = True
+
+                item.set_parent_layer(parent, log_cfg)
+
+            if p:
+                self.log_item(item)
+
+            self.set_attributes(item, data, p=p)
+            self.apply_interfaces(item, data, p=p)
+
+    def set_attributes(self, entity, data, p=False):
+        """
+        automatically looks up and calls interface methods
+            corresponding to the item_cfg data parameters
+        """
+        keys = [k for k in data]
+        order = entity.init_order
+
+        if p:
+            print("\nInitializing {}".format(entity))
+
+        # setter methods not listed in 'init_order' will
+        # be called afterwards
+        if order:
+            attrs = [
+                        o for o in order if o in keys
+                    ] + [
+                        k for k in keys if k not in order
+                    ]
+
+        else:
+            attrs = keys
+
+        # call set_attribute methods on item for values in dict
+        for attr in attrs:
+            set_attr = "set_" + attr
+
+            if hasattr(entity, set_attr):
+                if p:
+                    print("\t{}".format(set_attr))
+
+                # match value keys from class_dict and model
+                value = self.get_value(data[attr])
+
+                # call the setter method with args
+                if type(value) is list:
+                    args = value
+                else:
+                    args = [value]
+                getattr(entity, set_attr)(*args)
+
+                if p:
+                    print("\targs: {}\n".format(args))
+
+            elif attr not in Cfg.INIT_KEYS:
+                msg = "no {} method for {}".format(
+                    set_attr, entity)
+
+                print(msg)
+
+    def apply_interfaces(self, entity, data, p=False):
+        for interface in self.interfaces:
+            interface.handle_entity(entity, data, p=p)
+
+
+class NewApplicationInterface:
+    def __init__(self, context, name):
+        self.context = context
+        self.interface_name = name
+        self.get_value = context.get_value
+
+    def handle_entity(self, entity, data, p=False):
+        pass
+
+    def add_update_method(self, entity, *args):
+        pass
+
+    def call_interface_method(self, entity, *args):
+        pass
+
+    def call_entity_method(self, entity, *args):
+        pass

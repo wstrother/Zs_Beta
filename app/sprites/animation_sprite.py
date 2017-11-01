@@ -29,7 +29,7 @@ class AnimationSprite(Sprite):
             [
                 {
                     "name": "Move Sprite",
-                    "on_activate": ["toggle_movement", self],
+                    "on_activate": ["toggle_movement", "block", self],
                     "listeners": [
                         {
                             "name": "activate",
@@ -41,8 +41,6 @@ class AnimationSprite(Sprite):
                 None
             ]
         ]
-
-        self.pause_event_method("move")
 
         return menu
 
@@ -64,8 +62,8 @@ class AnimationSprite(Sprite):
         if self.graphics:
             return self.graphics.get_animation_states()
 
-    def toggle_movement(self):
-        self.pause_event_method('move')
+    # def toggle_movement(self):
+    #     self.pause_event_method('move')
 
     def cycle_animation(self):
         names = self.get_animation_states()

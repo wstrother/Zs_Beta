@@ -34,11 +34,11 @@ class GuiInterface(ApplicationInterface):
 
         self.set_menu(block, table)
 
-    def add_return_option(self, block):
+    def add_return_option(self, block, text):
         option = self.get_option(
             block, {
                 "name": "Return Option",
-                "text": "Exit",
+                "text": text,
                 "on_activate": ["handle_event", block, "return"]
             }
         )
@@ -66,6 +66,9 @@ class GuiInterface(ApplicationInterface):
             args = self.get_value_from_model(
                 d.pop("on_activate")
             )
+            if args[1] == "block":
+                args[1] = self
+
             self.set_activate_method(
                 option, *args
             )
@@ -105,11 +108,11 @@ class GuiInterface(ApplicationInterface):
 
         block.set_members(new_table)
 
-    def set_activate_method(self, option, method_name, target, *args):
+    @staticmethod
+    def set_activate_method(option, method_name, target, *args):
         m = None
-        if hasattr(self, method_name):
-            m = getattr(self, method_name)
-        elif hasattr(target, method_name):
+
+        if hasattr(target, method_name):
             m = getattr(target, method_name)
 
         if callable(m):

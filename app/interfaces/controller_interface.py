@@ -4,7 +4,7 @@ from src.context import ApplicationInterface
 class ControllerInterface(ApplicationInterface):
     INTERFACE_NAME = "controller interface"
     DPAD = "Dpad"
-    ACTIVATION = "A", "Start"
+    ACTIVATION = ("A",)
 
     def __init__(self, class_dict, environment):
         super(ControllerInterface, self).__init__(
@@ -43,6 +43,15 @@ class ControllerInterface(ApplicationInterface):
             block.members.active_member.queue_event("activate")
 
     @staticmethod
+    def check_pause_layer(layer):
+        if layer.controllers:
+            controller = layer.controllers[0]
+            b = controller.get_device("Start")
+
+            if b.check():
+                layer.handle_pause()
+
+    @staticmethod
     def move(sprite, speed):
         dpad = sprite.controller.get_device(
             ControllerInterface.DPAD
@@ -50,11 +59,13 @@ class ControllerInterface(ApplicationInterface):
 
         if dpad.held:
             dx, dy = dpad.get_direction()
+
             movement = {
                 'name': 'move',
                 'value': [dx, dy],
                 'speed': speed
             }
+
             sprite.queue_event(movement)
 
     @staticmethod

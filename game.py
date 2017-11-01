@@ -59,12 +59,16 @@ class Game:
         self.environment.main(self.screen)
 
         if self.environment.transition:
-            if self.environment.transition == "exit":
-                exit()
+            self.handle_transition()
 
-            old = self.environment
-            t = old.transition
+    def handle_transition(self):
+        old = self.environment
+        t = old.transition
 
+        if "exit" in t:
+            exit()
+
+        else:
             self.set_environment(
                 t["environment"]
             )
@@ -72,13 +76,14 @@ class Game:
             if not t.get("to_parent", False):
                 self.environment.return_to = old
                 old.transition = {}
-                print(old)
 
     def set_environment(self, env):
         if not type(env) is Environment:
             env = self.context.get_environment(env)
 
-        self.context.apply_interfaces(env)
+        if not env.spawned:
+            self.context.apply_interfaces(env)
+
         self.environment = env
 
 
