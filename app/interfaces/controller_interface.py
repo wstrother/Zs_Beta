@@ -2,21 +2,21 @@ from src.context import ApplicationInterface
 
 
 class ControllerInterface(ApplicationInterface):
-    INTERFACE_NAME = "controller interface"
     DPAD = "Dpad"
     ACTIVATION = ("A",)
 
-    def __init__(self, class_dict, environment):
+    def __init__(self, context):
+        name = "controller_interface"
         super(ControllerInterface, self).__init__(
-            class_dict, environment,
-            ControllerInterface.INTERFACE_NAME
+            context, name
         )
 
-    def handle_entity(self, method_name, entity, *args):
-        entity.update_methods.append(
-            self.get_interface_method(
-                method_name, entity, *args
-            )
+    def handle_data_item(self, entity, method_name, *args):
+        if args == (True,):
+            args = ()
+
+        self.add_update_method(
+            entity, method_name, entity, *args
         )
 
     @staticmethod
@@ -39,17 +39,20 @@ class ControllerInterface(ApplicationInterface):
             block.controller.get_device(n) for n in ControllerInterface.ACTIVATION
             ]
 
-        if any([b.check() for b in buttons]):
-            block.members.active_member.queue_event("activate")
+        if block.members.active_member and any([b.check() for b in buttons]):
+                block.members.active_member.queue_event("activate")
 
-    @staticmethod
-    def check_pause_layer(layer):
+    def check_pause_layer(self, layer):
         if layer.controllers:
             controller = layer.controllers[0]
             b = controller.get_device("Start")
 
             if b.check():
-                layer.handle_pause()
+                print("PAUSE LAYER")
+                for l in self.context.model["environment"].sub_layers:
+                    if l is not layer:
+                        print(l)
+                        l.handle_event("pause")
 
     @staticmethod
     def move(sprite, speed):

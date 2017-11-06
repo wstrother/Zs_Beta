@@ -81,8 +81,8 @@ class Game:
         if not type(env) is Environment:
             env = self.context.get_environment(env)
 
-        if not env.spawned:
-            self.context.apply_interfaces(env)
+        # if not env.spawned:
+        #     self.context.apply_interfaces(env)
 
         self.environment = env
 

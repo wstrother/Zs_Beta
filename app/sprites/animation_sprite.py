@@ -62,9 +62,6 @@ class AnimationSprite(Sprite):
         if self.graphics:
             return self.graphics.get_animation_states()
 
-    # def toggle_movement(self):
-    #     self.pause_event_method('move')
-
     def cycle_animation(self):
         names = self.get_animation_states()
         current = self.animation_state

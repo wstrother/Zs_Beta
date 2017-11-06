@@ -218,8 +218,9 @@ class Layer(Entity):
             self.set_controller(c)
 
     def update_controllers(self):
-        for c in self.controllers:
-            c.update()
+        if not self.paused:
+            for c in self.controllers:
+                c.update()
 
     def update_sprites(self):
         if not self.paused:
@@ -279,6 +280,9 @@ class Layer(Entity):
             if layer.visible:
                 layer.draw(canvas, offset=offset)
 
+    def on_pause(self):
+        self.paused = not self.paused
+
 
 class Environment(Layer):
     """
@@ -331,7 +335,7 @@ class Environment(Layer):
         return {
             Cfg.GROUPS: group_dict,
             Cfg.LAYERS: layer_dict,
-            Cfg.POPULATE: populate_dict,
+            Cfg.SPRITES: populate_dict,
         }
 
     # Automatically saves object's state as a .cfg file to the

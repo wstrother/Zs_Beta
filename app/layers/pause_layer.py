@@ -8,6 +8,6 @@ class PauseLayer(Layer):
         self.paused = True
         self.visible = False
 
-    def handle_pause(self):
-        self.paused = not self.paused
+    def on_pause(self):
+        super(PauseLayer, self).on_pause()
         self.visible = not self.paused
