@@ -15,7 +15,7 @@ class Cfg:
 
     GROUPS = "groups"
     LAYERS = "layers"
-    POPULATE = "populate"
+    SPRITES = "sprites"
 
     # items in these sections will be initialized by context.py
 
@@ -23,7 +23,7 @@ class Cfg:
 
     # items in these sections will be initialized in order
 
-    ORDERED_SECTIONS = (POPULATE, "gui interface")
+    ORDERED_SECTIONS = (SPRITES, "gui interface")
 
     # value keywords
 
@@ -71,7 +71,7 @@ class Resources:
 class Settings:
     SCREEN_SIZE = 1100, 600
     FRAME_RATE = 60
-    APP_START = "app_start"
+    APP_START = "demo"
 
 
 # ===============

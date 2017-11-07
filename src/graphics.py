@@ -32,6 +32,16 @@ class Graphics:
     def get_image(self):
         return self.image
 
+    def reset_image(self):
+        if self.entity.spawned:
+            self.image = self.make_image()
+            self.entity.set_size(
+                *self.image.get_size()
+            )
+
+    def make_image(self):
+        pass
+
 
 class ImageGraphics(Graphics):
     def __init__(self, entity, file_name, sub=False):
@@ -144,6 +154,9 @@ class AnimationGraphics(ImageGraphics):
 
         return gfx
 
+    def reset_image(self):
+        pass
+
 
 class Animation:
     def __init__(self, name, d):
@@ -217,20 +230,8 @@ class Animation:
 
 
 class TextGraphics(Graphics):
-    def __init__(self, entity, text):
+    def __init__(self, entity):
         super(TextGraphics, self).__init__(entity)
-        if type(text) not in (str, list):
-            text = str(text)
-
-        self.text = []
-        self.set_text(text)
-
-    def set_text(self, text):
-        self.text = text
-        self.image = self.make_image()
-        self.entity.set_size(
-            *self.image.get_size()
-        )
 
     def make_image(self):
         style = self.entity.style
@@ -247,11 +248,22 @@ class TextGraphics(Graphics):
         font = get_font(
             font_name, size, bold, italic)
 
-        image = self.make_text_image(
-            self.text, font, color, buffer,
-            cutoff=cutoff, nl=nl)
+        args = (
+            self.entity.get_text(),
+            font, color, buffer
+        )
+        kwargs = dict(cutoff=cutoff, nl=nl)
+        h_key = hash(args + (cutoff, nl))
 
-        return image
+        if h_key in Graphics.PRE_RENDERS:
+            return Graphics.PRE_RENDERS[h_key]
+
+        else:
+            image = self.make_text_image(
+                *args, **kwargs)
+            Graphics.PRE_RENDERS[h_key] = image
+
+            return image
 
     @staticmethod
     def get_text(text, cutoff, nl):
@@ -362,40 +374,68 @@ class RectGraphics(Graphics):
 
     @staticmethod
     def get_rect_image(size, color, draw_width):
-        # PYGAME CHOKE POINT
+        h_key = hash(("rect", size, color, draw_width))
+        if h_key in Graphics.PRE_RENDERS:
+            return Graphics.PRE_RENDERS[h_key]
 
-        rect = Rect((0, 0), size)
-        image = Surface(
-            size, SRCALPHA, 32)
-        draw.rect(
-            image, color, rect, draw_width)
+        else:
+            # PYGAME CHOKE POINT
 
-        return image
+            rect = Rect((0, 0), size)
+            image = Surface(
+                size, SRCALPHA, 32)
+            draw.rect(
+                image, color, rect, draw_width)
+
+            Graphics.PRE_RENDERS[h_key] = image
+            return image
 
     @staticmethod
     def get_circle_image(radius, color, draw_width):
-        # PYGAME CHOKE POINT
+        h_key = hash(("circle", radius, color, draw_width))
+        if h_key in Graphics.PRE_RENDERS:
+            return Graphics.PRE_RENDERS[h_key]
 
-        size = 2 * radius, 2 * radius
-        position = radius, radius
+        else:
+            # PYGAME CHOKE POINT
 
-        image = Surface(
-            size, SRCALPHA, 32)
+            size = 2 * radius, 2 * radius
+            position = radius, radius
 
-        draw.circle(
-            image, color, position,
-            radius, draw_width)
+            image = Surface(
+                size, SRCALPHA, 32)
 
-        return image
+            draw.circle(
+                image, color, position,
+                radius, draw_width)
+
+            Graphics.PRE_RENDERS[h_key] = image
+            return image
 
 
 class ContainerGraphics(Graphics):
     def __init__(self, entity):
         super(ContainerGraphics, self).__init__(entity)
 
+        self.bg_image = None
+        self.corner_image = None
+        self.h_side_image = None
+        self.v_side_image = None
+        self.border_size = 0, 0
+        self.get_style_attributes()
+
+    def get_style_attributes(self):
+        style = self.entity.style
+        border_images = style["border_images"]
+        h_side, v_side, corner = border_images
+        self.h_side_image = load_resource(h_side)
+        self.v_side_image = load_resource(v_side)
+        self.corner_image = load_resource(corner)
+        self.border_size = self.corner_image.get_size()
+
     def make_image(self, bg_color=False):
         entity = self.entity
-        size = entity.rect.size
+        size = entity.size
 
         if entity.style:
             style = entity.style
@@ -413,12 +453,13 @@ class ContainerGraphics(Graphics):
             size, bg_color)
 
         # BG TILE IMAGE
-        if style["bg_image"]:
+        if style.get("bg_image", None):
+            self.bg_image = load_resource(style["bg_image"])
             image = self.tile(
                 style["bg_image"], image)
 
         # BORDERS
-        if style["border"]:
+        if style.get("border", None):
             border_images = style["border_images"]
             sides = style["border_sides"]
             corners = style["border_corners"]
@@ -428,7 +469,7 @@ class ContainerGraphics(Graphics):
             )
 
         # BORDER ALPHA TRIM
-        if style["alpha_color"]:
+        if style.get("alpha_color", None):
             image = self.convert_colorkey(
                 image, (255, 0, 0)
             )

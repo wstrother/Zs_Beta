@@ -90,16 +90,19 @@ class EventHandler:
         name = listener[Events.NAME]
 
         for l in self.listeners:
-            match = l[Events.NAME] == name
+            matches = [
+                l[Events.NAME] == name
+            ]
+
             response = listener.get(Events.RESPONSE, False)
             if response:
-                match = l[Events.RESPONSE] == response
+                matches.append(l[Events.RESPONSE] == response)
 
             target = listener.get(Events.TARGET, False)
             if target:
-                match = l[Events.TARGET] == target
+                matches.append(l[Events.TARGET] == target)
 
-            if match:
+            if all(matches):
                 remove.append(l)
 
         self.listeners = [l for l in self.listeners if l not in remove]

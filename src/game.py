@@ -1,4 +1,4 @@
-from sys import exit, argv
+from sys import exit
 
 import pygame
 
@@ -16,10 +16,13 @@ class Game:
         and update them both at a regular interval.
     """
 
-    def __init__(self, screen, frame_rate, start_env):
-        self.environment = start_env
+    def __init__(self, screen, frame_rate, start_env, context):
+        self.environment = None
         self.screen = screen
         self.frame_rate = frame_rate
+        self.context = context
+
+        self.set_environment(start_env)
 
     '''This method is necessary to poll and clear the Pygame events queue, as well as
     checking for QUIT events to close the program'''
@@ -39,10 +42,10 @@ class Game:
 
         while True:
             self.poll_events()
-            self.main_routine(clock)
+            self.update_environment(clock)
             pygame.display.flip()
 
-    def main_routine(self, clock=None):
+    def update_environment(self, clock=None):
         # print("\n\n======================")
 
         # dt value can be printed to stdout or passed to data model
@@ -55,26 +58,37 @@ class Game:
         self.screen.fill((0, 0, 0))
         self.environment.main(self.screen)
 
+        if self.environment.transition:
+            self.handle_transition()
 
-def start(start_env, class_dict, *apps):
+    def handle_transition(self):
+        old = self.environment
+        t = old.transition
+
+        if "exit" in t:
+            exit()
+
+        else:
+            self.set_environment(
+                t["environment"]
+            )
+
+            if not t.get("to_parent", False):
+                self.environment.return_to = old
+                old.transition = {}
+
+    def set_environment(self, env):
+        if not type(env) is Environment:
+            env = self.context.get_environment(env)
+
+        # if not env.spawned:
+        #     self.context.apply_interfaces(env)
+
+        self.environment = env
+
+
+def start(env, context):
     scr = pygame.display.set_mode(Settings.SCREEN_SIZE)
     fps = Settings.FRAME_RATE
 
-    env = Environment.make_from_cfg(
-        start_env, class_dict=class_dict
-    )
-
-    for app in apps:
-        env.apply_context_interface(
-            class_dict, app
-        )
-
-    return Game(scr, fps, env)
-
-
-if __name__ == "__main__":
-
-    if len(argv) > 1:
-        start(argv[1], None).main()
-    else:
-        print("Please specify a start environment")
+    return Game(scr, fps, env, context)
