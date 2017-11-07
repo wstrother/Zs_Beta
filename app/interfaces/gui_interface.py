@@ -16,6 +16,9 @@ class GuiInterface(ApplicationInterface):
         ]
 
     def handle_data_item(self, entity, method_name, *args):
+        if args == (True, ):
+            args = ()
+
         self.call_method_on_entity(
             entity, method_name, *args
         )
@@ -44,6 +47,15 @@ class GuiInterface(ApplicationInterface):
     def get_menu_from_entity(self, block, entity):
         print("\t\t!!!{}".format(entity))
         self.set_menu(block, entity.get_menu())
+
+    def get_pause_menu(self, layer):
+        data = layer.get_pause_menu_data()
+
+        block = self.context.add_entity(
+            "Pause Menu Block", data, model=False
+        )
+        self.context.set_attributes(block, data)
+        self.context.apply_interfaces(block, data)
 
     def set_menu(self, block, table):
         new_table = []

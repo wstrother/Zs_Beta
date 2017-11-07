@@ -1,7 +1,7 @@
 from app.interfaces.controller_interface import ControllerInterface
 from app.interfaces.gui_interface import GuiInterface
 
-from app.layers.pause_layer import PauseLayer
+from app.layers.pause_layer import PauseLayer, PauseMenuBlock
 
 from app.sprites.animation_sprite import AnimationSprite
 from app.sprites.hud_sprite import HudSprite
@@ -16,7 +16,8 @@ class_dict = {cls.__name__: cls for cls in (
     AnimationSprite,
     HudSprite,
     BlockSprite,
-    PauseLayer
+    PauseLayer,
+    PauseMenuBlock
 )}
 
 context = Context(class_dict, ControllerInterface, GuiInterface)

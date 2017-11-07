@@ -108,8 +108,8 @@ class Context:
         self.add_groups(groups)
 
         for name in entities:
-            layer = name in layers
-            self.add_entities(
+            layer = name in layers and name != "environment"
+            self.add_entity(
                 name, entities[name], layer=layer
             )
 
@@ -149,11 +149,16 @@ class Context:
             if p:
                 self.log_item(group)
 
-    def add_entities(self, name, data, layer=False, p=False):
-        item = self.get_spawn_method(
-            data[Cfg.CLASS_KEYWORD]
-        )(name)
-        self.model[name] = item
+    def add_entity(self, name, data, layer=False, p=False, model=True):
+        if name == "environment":
+            item = self.model["environment"]
+        else:
+            item = self.get_spawn_method(
+                data[Cfg.CLASS_KEYWORD]
+            )(name)
+
+            if model:
+                self.model[name] = item
 
         if layer:
             if Cfg.PARENT_LAYER not in data:
@@ -169,6 +174,8 @@ class Context:
         if p:
             self.log_item(item)
 
+        return item
+
     @staticmethod
     def get_init_order(data, order):
         keys = [k for k in data]
@@ -182,6 +189,9 @@ class Context:
         return attrs
 
     def set_attributes(self, entity, data, p=False):
+        if hasattr(entity, "cfg"):
+            data.update(getattr(entity, "cfg"))
+
         for attr in self.get_init_order(data, entity.init_order):
             set_attr = "set_" + attr
 
@@ -209,13 +219,19 @@ class Context:
                 print(msg)
 
     def apply_interfaces(self, entity, data, p=False):
-        for interface in [i for i in self.interfaces if i.name in data]:
-            section_name = data[interface.name]
+        for interface in self.interfaces:
+            gui_data = data.get(interface.name, None)
 
-            if ".json" in section_name:
-                section = load_resource(section_name)
+            if gui_data:
+                if ".json" in gui_data:
+                    section = load_resource(gui_data)
+                else:
+                    section = self.model[gui_data]
             else:
-                section = self.model[section_name]
+                section = {}
+
+            if hasattr(entity, interface.name):
+                section.update(getattr(entity, interface.name))
 
             interface.apply_to_entity(entity, section, p=p)
 
@@ -235,6 +251,7 @@ class ApplicationInterface:
     def apply_to_entity(self, entity, data, p=False):
         for method_name in self.context.get_init_order(data, self.init_order):
             value = self.get_value(data[method_name])
+
             if type(value) is not list:
                 args = [value]
             else:

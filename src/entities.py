@@ -197,6 +197,9 @@ class Layer(Entity):
 
     def set_groups(self, *groups):
         for g in groups:
+            if type(g) is str:
+                g = Group(g)
+
             self.add_to_list(Cfg.GROUPS, g)
 
     def set_controller(self, arg):
