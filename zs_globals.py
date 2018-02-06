@@ -116,3 +116,9 @@ class ControllerInputs:
     AXES = "x_axis", "y_axis"
     STICK_DEAD_ZONE = .1
     AXIS_MIN = .9
+
+
+class DefaultUI:
+    BORDER_CORNER_CHOICES = "abcd"
+    RECT_DRAW_WIDTH = 5
+    RECT_DRAW_COLOR = 255, 0, 0
