@@ -1,22 +1,10 @@
-from src.resources import load_resource, get_font
 from pygame import SRCALPHA, draw, transform
-from pygame.surface import Surface
 from pygame.rect import Rect
+from pygame.surface import Surface
+
 from src.meters import Meter
-from zs_globals import Settings
-
-BORDER_CORNER_CHOICES = "abcd"
-RECT_DRAW_WIDTH = 5
-RECT_DRAW_COLOR = 255, 0, 0
-
-DEFAULT_STYLE = {
-    "font_name": "courier-new",
-    "font_size": 15,
-    "font_color": (255, 255, 255),
-    "text_buffer": 5,
-    "text_cutoff": 20,
-    "text_newline": False,
-}
+from src.resources import load_resource, get_font
+from zs_globals import Settings, DefaultUI
 
 
 class Graphics:
@@ -35,32 +23,52 @@ class Graphics:
     def reset_image(self):
         if self.entity.spawned:
             self.image = self.make_image()
-            self.entity.set_size(
-                *self.image.get_size()
-            )
+            if self.image:
+                self.entity.set_size(
+                    *self.image.get_size()
+                )
 
     def make_image(self):
         pass
 
 
 class ImageGraphics(Graphics):
-    def __init__(self, entity, file_name, sub=False):
+    def __init__(self, entity, file_name, sub=False, scale=1):
         super(ImageGraphics, self).__init__(entity)
 
-        image = load_resource(file_name)
-        self.set_colorkey(image)
+        self.sub = sub
+        self.scale = scale
+        self.file_name = file_name
 
-        if not sub:
-            self.image = image
+    def make_image(self):
+        image = load_resource(self.file_name)
+        scale = self.scale
+        if scale != 1:
+            image = self.scale_image(image, scale)
+
+        if not self.sub:
+            return image
+
         else:
-            position, size = sub
-            self.image = self.make_sub_image(
-                image, position, size
+            (x, y), (w, h) = self.sub
+            x *= scale
+            y *= scale
+            w *= scale
+            h *= scale
+            return self.make_sub_image(
+                image, (x, y), (w, h)
             )
 
     @staticmethod
     def flip_image(image, x_bool, y_bool):
         return transform.flip(image, x_bool, y_bool)
+
+    @staticmethod
+    def scale_image(image, scale):
+        w, h = image.get_size()
+        w *= scale
+        h *= scale
+        return transform.scale(image, (w, h))
 
     @staticmethod
     def make_sub_image(image, position, size):
@@ -74,159 +82,6 @@ class ImageGraphics(Graphics):
         img.set_colorkey(
             img.get_at(pixel)
         )
-
-
-class AnimationGraphics(ImageGraphics):
-    def __init__(self, entity, file_name, animations):
-        super(AnimationGraphics, self).__init__(entity, file_name)
-        self.mirror_image = ImageGraphics.flip_image(
-            self.image, True, False
-        )
-        self.animations = animations
-        self.animation_state = ""
-        self.animation_meter = Meter(
-            "Animation Meter for {}".format(entity),
-            0, 0, 1
-        )
-        self.image_sets = self.get_image_sets(animations)
-
-    def get_animation_states(self):
-        return list(self.animations.keys())
-
-    def get_image_sets(self, animations):
-        sets = {}
-
-        for a in animations.values():
-            img = self.image
-            if a.mirror:
-                img = self.mirror_image
-
-            sets[a.name] = [
-                self.make_sub_image(
-                    img,
-                    a.get_cell_position(i),
-                    a.get_cell_size(i)
-                ) for i in range(a.length)
-            ]
-
-        return sets
-
-    def set_animation_state(self, state):
-        self.animation_state = state
-        a = self.get_animation(state)
-
-        self.animation_meter.reset()
-        self.animation_meter.maximum = (a.length * a.frame_rate) - 1
-
-    def get_image(self):
-        a = self.get_animation()
-
-        if a:
-            i = self.animation_meter.value // a.frame_rate
-            return self.image_sets[
-                self.animation_state
-            ][i]
-
-    def get_animation(self, state=None):
-        if not state:
-            state = self.animation_state
-
-        animations = self.animations
-        default = animations.get("default", None)
-
-        return animations.get(state, default)
-
-    def update(self):
-        self.animation_meter.next()
-
-    @staticmethod
-    def load_from_cfg(entity, d):
-        image = d["info"]["sprite_sheet"]
-
-        animations = {}
-        for name in d:
-            if name != "info":
-                animations[name] = Animation.get_from_cfg(name, d)
-
-        gfx = AnimationGraphics(
-            entity, image, animations
-        )
-
-        return gfx
-
-    def reset_image(self):
-        pass
-
-
-class Animation:
-    def __init__(self, name, d):
-        self.name = name
-        self.frames = d["frames"]
-        self.frame_rate = d["frame_rate"]
-        self.length = len(self.frames)
-        self.mirror = d.get("mirror", False)
-        self.src_size = d["src_size"]
-
-    def get_cell_position(self, i):
-        frame = self.frames[i]
-        x, y = frame["position"]
-        if self.mirror:
-            w, h = frame["size"]
-            sx, sy = self.src_size
-            x = sx - (x + w)
-
-        return [x, y]
-
-    def get_cell_size(self, i):
-        frame = self.frames[i]
-        return frame["size"]
-
-    @staticmethod
-    def get_from_cfg(name, cfg):
-        entry = cfg[name]
-        info = cfg["info"]
-
-        if "frame_rate" not in entry:
-            entry["frame_rate"] = info["frame_rate"]
-
-        if "src_size" not in entry:
-            sprite_sheet = load_resource(info["sprite_sheet"])
-            entry["src_size"] = list(sprite_sheet.get_size())
-
-        if "frames" not in entry:
-            frames = []
-            for i in sorted(entry.keys()):
-                try:
-                    int(i)
-
-                    frame = entry[i]
-                    if type(frame) is dict:
-                        frames.append(frame)
-                    else:
-                        cell_size = cfg["info"]["cell_size"]
-                        frames.append(
-                            Animation.get_frame_data(entry[i], cell_size)
-                        )
-                except ValueError:
-                    pass
-
-            entry["frames"] = frames
-
-        else:
-            if type(entry["frames"]) is str:
-                entry["frames"] = load_resource(entry["frames"], section="frames")
-
-        return Animation(name, entry)
-
-    @staticmethod
-    def get_frame_data(frame, cell_size):
-        x, y = frame
-        cw, ch = cell_size
-
-        x *= cw
-        y *= ch
-
-        return {"size": list(cell_size), "position": [x, y]}
 
 
 class TextGraphics(Graphics):
@@ -250,7 +105,7 @@ class TextGraphics(Graphics):
 
         args = (
             self.entity.get_text(),
-            font, color, buffer
+            font, tuple(color), buffer
         )
         kwargs = dict(cutoff=cutoff, nl=nl)
         h_key = hash(args + (cutoff, nl))
@@ -367,10 +222,10 @@ class RectGraphics(Graphics):
     def make_image(self):
         entity = self.entity
         color = entity.style.get(
-            "draw_color", RECT_DRAW_COLOR)
+            "draw_color", DefaultUI.RECT_DRAW_COLOR)
 
         return self.get_rect_image(
-            entity.size, color, RECT_DRAW_WIDTH)
+            entity.size, color, DefaultUI.RECT_DRAW_WIDTH)
 
     @staticmethod
     def get_rect_image(size, color, draw_width):
@@ -436,11 +291,7 @@ class ContainerGraphics(Graphics):
     def make_image(self, bg_color=False):
         entity = self.entity
         size = entity.size
-
-        if entity.style:
-            style = entity.style
-        else:
-            style = DEFAULT_STYLE
+        style = entity.style
 
         if not bg_color:
             # BG COLOR
@@ -591,7 +442,7 @@ class ContainerGraphics(Graphics):
         corner_image = load_resource(image_name)
         w, h = surface.get_size()
         cw, ch = corner_image.get_size()
-        a, b, c, d = BORDER_CORNER_CHOICES
+        a, b, c, d = DefaultUI.BORDER_CORNER_CHOICES
         locations = {a: (0, 0),
                      b: (w - cw, 0),
                      c: (0, h - ch),
@@ -602,7 +453,7 @@ class ContainerGraphics(Graphics):
 
     @staticmethod
     def get_corner(img, string):
-        a, b, c, d = BORDER_CORNER_CHOICES
+        a, b, c, d = DefaultUI.BORDER_CORNER_CHOICES
         flip = transform.flip
         corner = {a: lambda i: i,
                   b: lambda i: flip(i, True, False),
@@ -610,3 +461,35 @@ class ContainerGraphics(Graphics):
                   d: lambda i: flip(i, True, True)}[string](img)
 
         return corner
+
+
+class AnimationGraphics(Graphics):
+    def __init__(self, entity, image_sets):
+        super(AnimationGraphics, self).__init__(entity)
+
+        self.image_sets = image_sets
+        self.animation_meter = Meter(
+            "Animation Meter for {}".format(entity),
+            0, 0, 1
+        )
+
+    def get_image(self):
+        state = self.entity.animation_state
+        i = self.animation_meter.value
+
+        if state:
+            return self.image_sets[state][i]
+
+    def reset_image(self):
+        pass
+
+    def update(self):
+        self.animation_meter.next()
+
+    def reset_animation(self):
+        state = self.entity.animation_state
+        i = len(self.image_sets[state]) - 1
+
+        self.animation_meter.reset()
+        self.animation_meter.maximum = i
+

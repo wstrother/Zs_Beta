@@ -57,20 +57,25 @@ class Context:
             item, name
         ))
 
-    def get_value(self, value):
+    def get_value(self, value, sub=None):
         """
         looks up corresponding keys to data argument in
           the imported class_dict and data model
         """
         def get(k):
+            print(k)
+
             if k == Cfg.MODEL:
                 return self.model
 
-            if k in self.class_dict:
+            elif k in self.class_dict:
                 return self.class_dict[k]
 
-            if k in self.model:
+            elif k in self.model:
                 return self.model[k]
+
+            elif sub and k in sub:
+                return sub[k]
 
             else:
                 return k
@@ -78,14 +83,23 @@ class Context:
         if type(value) is list:
             new = []
             for item in value:
-                new.append(get(item))
+                new.append(
+                    self.get_value(item, sub=sub)
+                )
 
             return new
 
         elif type(value) is dict:
             for key in value:
                 if value[key] is True:
-                    value[key] = get(key)
+                    value[key] = self.get_value(
+                        key, sub=sub
+                    )
+
+                else:
+                    value[key] = self.get_value(
+                        value[key], sub=sub
+                    )
 
             return value
 
@@ -277,6 +291,7 @@ class ApplicationInterface:
 
         if m:
             def interface_update_method():
+                # print(args)
                 m(*args)
 
             entity.update_methods.append(interface_update_method)

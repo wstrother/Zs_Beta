@@ -366,6 +366,15 @@ class Environment(Layer):
         self.draw(screen)
         self.update()
 
+    def on_change_environment(self):
+        event = self.event
+        env = event["environment"]
+
+        self.transition = {
+            "environment": env
+        }
+        self.transition.update(event)
+
     def on_return(self):
         if self.return_to:
             env = self.return_to
