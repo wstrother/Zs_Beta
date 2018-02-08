@@ -1,0 +1,44 @@
+{
+    "border_corners": "abcd",
+    "aligns": [
+        "c",
+        "t"
+    ],
+    "font_size": 15,
+    "border_images": [
+        "h_side.png",
+        "v_side.png",
+        "corner.png"
+    ],
+    "text_newline": false,
+    "bold": true,
+    "bg_image": "bg.png",
+    "border_size": [
+        5,
+        5
+    ],
+    "border": true,
+    "font_name": "courier-new",
+    "alpha_color": [
+        255,
+        0,
+        0
+    ],
+    "text_cutoff": 100,
+    "font_color": [
+        255,
+        255,
+        255
+    ],
+    "bg_color": [
+        0,
+        0,
+        255
+    ],
+    "text_buffer": 5,
+    "buffers": [
+        5,
+        5
+    ],
+    "border_sides": "tlrb"
+}
