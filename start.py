@@ -10,7 +10,8 @@ class_dict = {
 }
 context = Context(class_dict, *interfaces)
 
-start(
-    Settings.APP_START, context
-).main()
+if __name__ == "__main__":
+    start(
+        Settings.APP_START, context
+    ).main()
 
